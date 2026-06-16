@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <!-- スマホの画面幅にジャストフィットさせる魔法の1行 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>絶妖星乱舞P4 真偽カンペ (スマホ版)</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: #0f0f0f;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow-x: hidden;
+            /* スマホ特有の「タップしたときの青い影」を消す */
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            padding: 12px;
+            padding-bottom: 30px; /* 下部に少し余裕を持たせる */
+        }
+        .header-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #ffcc00;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+        }
+        .title {
+            font-size: 18px;
+            color: #ffcc00;
+            font-weight: bold;
+        }
+        /* ALLリセットボタンをスマホ用に押しやすく */
+        .reset-btn {
+            background: #ff3333;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .section-title {
+            font-size: 13px;
+            color: #aaa;
+            margin: 16px 0 6px 0;
+            font-weight: bold;
+            border-left: 4px solid #ffcc00;
+            padding-left: 6px;
+            text-transform: uppercase;
+        }
+        /* 縦並びを意識したスマホ用コンテナ */
+        .row {
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 8px;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #666;
+            display: flex;
+            flex-direction: column; /* スマホの横幅を活かすため上下2段に分割 */
+            gap: 10px;
+        }
+        .gimmick-info {
+            width: 100%;
+        }
+        .gimmick-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        /* スマホで親指タップしやすい【超特大並列ボタン】 */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+        .choice-btn {
+            flex: 1; /* 2つのボタンで横幅を50%ずつ綺麗に分け合う */
+            border: 1px solid #555;
+            background: #262626;
+            color: #ccc;
+            padding: 14px 0; /* 縦幅を大幅に広げて「絶対に押し間違えない」サイズに */
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+        }
+        
+        /* 選択状態のアニメーションと色変化（真＝青 / 偽＝赤） */
+        .row.active-shin { border-left-color: #4dadff; background: rgba(77, 173, 255, 0.1); }
+        .row.active-gi { border-left-color: #ff4d4d; background: rgba(255, 77, 77, 0.1); }
+        .row.active-shin .btn-shin { background: #4dadff; color: #fff; border-color: #3399ff; box-shadow: 0 0 10px rgba(77, 173, 255, 0.4); }
+        .row.active-gi .btn-gi { background: #ff4d4d; color: #fff; border-color: #ff3333; box-shadow: 0 0 10px rgba(255, 77, 77, 0.4); }
+
+        /* ナビゲーションテキスト */
+        .nav-text {
+            font-size: 13px;
+            color: #ffcc00;
+            margin-top: 6px;
+            font-weight: bold;
+            display: none;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 204, 0, 0.2);
+        }
+        .active-shin .nav-shin { display: block; }
+        .active-gi .nav-gi { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="header-area">
+        <div class="title">🤡 絶妖星乱舞 P4 真偽判定</div>
+        <button class="reset-btn" onclick="resetAll()">ALLリセット</button>
+    </div>
+
+    <div class="section-title">【第1フェーズ】</div>
+    <div class="row" id="row-gc1">
+        <div class="gimmick-info">
+            <div class="gimmick-name">1回目 グランドクロス</div>
+            <div class="nav-text nav-shin">📢 【真】水頭 / ライトニング散開 / 視線見ない</div>
+            <div class="nav-text nav-gi">📢 【偽】ライトニング頭 / 水散開 / 視線見る</div>
+        </div>
+        <div class="btn-group">
+            <button class="choice-btn btn-shin" onclick="setSelect('row-gc1', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-gc1', 'gi')">偽</button>
+        </div>
+    </div>
+    <div class="row" id="row-element1">
+        <div class="gimmick-info">
+            <div class="gimmick-name">1回目 つなみ or ほのお</div>
+            <div class="nav-text nav-shin">📢 【真】水：ドーナツ / 炎：タケノコ</div>
+            <div class="nav-text nav-gi">📢 【偽】水：タケノコ / 炎：ドーナツ</div>
+        </div>
+        <div class="btn-group">
+            <button class="choice-btn btn-shin" onclick="setSelect('row-element1', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-element1', 'gi')">偽</button>
+        </div>
+    </div>
+
+    <div class="section-title">【第2フェーズ】</div>
+    <div class="row" id="row-gc2">
+        <div class="gimmick-info">
+            <div class="gimmick-name">2回目 グランドクロス</div>
+            <div class="nav-text nav-shin">📢 【真】水頭 / ライトニング散開 / 視線見ない</div>
+            <div class="nav-text nav-gi">📢 【偽】ライトニング頭 / 水散開 / 視線見る</div>
+        </div>
+        <div class="btn-group">
+            <button class="choice-btn btn-shin" onclick="setSelect('row-gc2', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-gc2', 'gi')">偽</button>
+        </div>
+    </div>
+    <div class="row" id="row-element2">
+        <div class="gimmick-info">
+            <div class="gimmick-name">2回目 つなみ or ほのお</div>
+            <div class="nav-text nav-shin">📢 【真】水：ドーナツ / 炎：タケノコ</div>
+            <div class="nav-text nav-gi">📢 【偽】水：タケノコ / 炎：ドーナツ</div>
+        </div>
+        <div class="btn-group">
+            <button class="choice-btn btn-shin" onclick="setSelect('row-element2', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-element2', 'gi')">偽</button>
+        </div>
+    </div>
+
+    <div class="section-title">【単体・都度確認】</div>
+    <div class="row" id="row-thunda">
+        <div class="gimmick-info">
+            <div class="gimmick-name">⚡ サンダガ</div>
+            <div class="nav-text nav-shin">📢 【真】直線踏まない</div>
+            <div class="nav-text nav-gi">📢 【偽】直線踏む</div>
+        </div>
+        <div class="btn-group">
+            <button class="choice-btn btn-shin" onclick="setSelect('row-thunda', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-thunda', 'gi')">偽</button>
+        </div>
+    </div>
+    <div class="row" id="row-blizza">
+        <div class="gimmick-info">
+            <div class="gimmick-name">❄️ ブリザガ</div>
+            <div class="nav-text nav-shin">📢 【真】扇踏まない</div>
+            <div class="nav-text nav-gi">📢 【偽】扇踏む</div>
+        </div>
+        <div class="btn-group">
+            <button class="choice-btn btn-shin" onclick="setSelect('row-blizza', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-blizza', 'gi')">偽</button>
+        </div>
+    </div>
+    <div class="row" id="row-accel">
+        <div class="gimmick-info">
+            <div class="gimmick-name">⏳ 加速度爆弾</div>
+            <div class="nav-text nav-shin">📢 【真】止まる</div>
+            <div class="nav-text nav-gi">📢 【偽】動き続ける</div>
+        </div>
+        <div class="btn-group">
+            <button class="choice-btn btn-shin" onclick="setSelect('row-accel', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-accel', 'gi')">偽</button>
+        </div>
+    </div>
+
+    <script>
+        // スマホ表示のためElectron依存のコード(ipcRenderer)を完全に排除
+        function setSelect(rowId, type) {
+            const row = document.getElementById(rowId);
+            if ((type === 'shin' && row.classList.contains('active-shin')) || 
+                (type === 'gi' && row.classList.contains('active-gi'))) {
+                row.classList.remove('active-shin', 'active-gi');
+                return;
+            }
+            row.classList.remove('active-shin', 'active-gi');
+            if (type === 'shin') row.classList.add('active-shin');
+            if (type === 'gi') row.classList.add('active-gi');
+        }
+
+        function resetAll() {
+            const rows = document.querySelectorAll('.row');
+            rows.forEach(row => row.classList.remove('active-shin', 'active-gi'));
+        }
+    </script>
+</body>
+</html>
+
