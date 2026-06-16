@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>絶妖星乱舞P4 カンペ (iPhone8版)</title>
+    <title>絶妖星乱舞P4 カンペ (完成版)</title>
     <style>
         html, body {
             margin: 0;
@@ -18,7 +18,7 @@
         }
         body {
             box-sizing: border-box;
-            padding: 4px 8px; /* iPhone8の狭い上下余白をギリギリまで削減 */
+            padding: 2px 6px; 
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
@@ -28,12 +28,12 @@
             align-items: center;
             justify-content: space-between;
             border-bottom: 2px solid #ffcc00;
-            padding-bottom: 4px;
+            padding-bottom: 3px;
             margin-bottom: 2px;
             flex-shrink: 0;
         }
         .title {
-            font-size: 14px; /* タイトルを少しコンパクトに */
+            font-size: 13px;
             color: #ffcc00;
             font-weight: bold;
         }
@@ -41,51 +41,58 @@
             background: #ff3333;
             color: #fff;
             border: none;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 4px;
             font-size: 11px;
             font-weight: bold;
+            cursor: pointer;
         }
         .section-title {
-            font-size: 10px; /* セクション文字を最小化 */
-            color: #aaa;
-            margin: 4px 0 2px 0;
+            font-size: 9px;
+            color: #ccc;
+            margin: 2px 0 1px 0;
             font-weight: bold;
-            border-left: 3px solid #ffcc00;
+            border-left: 2px solid #ffcc00;
             padding-left: 4px;
             flex-shrink: 0;
         }
         
-        /* iPhone8の画面内に7つ詰め込むための極薄行 */
+        /* 横並び配置 */
         .row {
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.03);
             margin-bottom: 2px;
-            padding: 4px 6px; /* 縦の余白を極限までカット */
-            border-radius: 5px;
+            padding: 3px 5px; 
+            border-radius: 4px;
             border-left: 3px solid #666;
             display: flex;
-            flex-direction: column;
-            gap: 2px;
+            align-items: center; 
+            justify-content: space-between;
+            gap: 6px;
             flex-shrink: 0;
         }
+        
+        /* 左側のテキストエリア（ボタンに絶対被らないパーセント幅に制限） */
         .gimmick-info {
+            width: 70%; /* 右側のボタン用に30%のスペースを確実に空ける */
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
         .gimmick-name {
             font-weight: bold;
-            font-size: 12px; /* 視認性を保ちつつ縮小 */
+            font-size: 11px;
             color: #fff;
+            white-space: nowrap;
         }
         
-        /* ナビゲーションの高さも15pxに縮小 */
+        /* はみ出しを確実に防止するコンテナ設定 */
         .nav-container {
-            height: 15px; 
-            margin-top: 1px;
+            height: 12px; 
             position: relative;
+            width: 100%; /* 親要素の70%の幅の中に完全に閉じ込める */
         }
         .nav-text {
-            font-size: 10px; /* iPhone8でも読める細かなフォント */
+            font-size: 9px;
             color: #ffcc00;
             font-weight: bold;
             position: absolute;
@@ -96,26 +103,28 @@
             overflow: hidden;
             text-overflow: ellipsis;
             opacity: 0; 
-            transition: opacity 0.1s ease;
+            transition: opacity 0.05s ease;
         }
         .active-shin .nav-shin { opacity: 1; }
         .active-gi .nav-gi { opacity: 1; }
 
-        /* ボタンの縦幅を「iPhone8の画面内に収まる限界」に調整 */
+        /* 右側の独立したボタンエリア */
         .btn-group {
             display: flex;
-            gap: 6px;
-            width: 100%;
+            gap: 4px;
+            flex-shrink: 0;
+            width: 90px; 
         }
         .choice-btn {
             flex: 1;
-            border: 1px solid #555;
+            border: 1px solid #444;
             background: #222;
             color: #ccc;
-            padding: 6px 0; /* 縦幅を10px➔6pxに削り、はみ出しを完全防止 */
-            font-size: 12px;
+            padding: 6px 0; 
+            font-size: 11px;
             font-weight: bold;
-            border-radius: 5px;
+            border-radius: 4px;
+            cursor: pointer;
         }
         
         /* 真＝青 / 偽＝赤 */
@@ -132,27 +141,41 @@
         <button class="reset-btn" onclick="resetAll()">ALLリセット</button>
     </div>
 
-    <div class="section-title">【第1フェーズ】</div>
-    <div class="row" id="row-gc1">
+    <div class="section-title">【1回目グランドクロス】</div>
+    <div class="row" id="row-1water">
         <div class="gimmick-info">
-            <div class="gimmick-name">1回目 グランドクロス</div>
-            <div class="nav-container">
-                <div class="nav-text nav-shin">📢 【真】水頭/ライトニング散開/視線見ない</div>
-                <div class="nav-text nav-gi">📢 【偽】ライトニング頭/水散開/視線見る</div>
-            </div>
+            <div class="gimmick-name">💧 早水</div>
+            <div class="nav-container"><div class="nav-text nav-shin">📢 【真】水頭割り参加</div><div class="nav-text nav-gi">📢 【偽】水散開（頭割り入らない）</div></div>
         </div>
         <div class="btn-group">
-            <button class="choice-btn btn-shin" onclick="setSelect('row-gc1', 'shin')">真</button>
-            <button class="choice-btn btn-gi" onclick="setSelect('row-gc1', 'gi')">偽</button>
+            <button class="choice-btn btn-shin" onclick="setSelect('row-1water', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-1water', 'gi')">偽</button>
+        </div>
+    </div>
+    <div class="row" id="row-1light">
+        <div class="gimmick-info">
+            <div class="gimmick-name">⚡ 早ライトニング</div>
+            <div class="nav-container"><div class="nav-text nav-shin">📢 【真】ライトニング散開</div><div class="nav-text nav-gi">📢 【偽】ライトニング頭割り</div></div>
+        </div>
+        <div class="btn-group">
+            <button class="choice-btn btn-shin" onclick="setSelect('row-1light', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-1light', 'gi')">偽</button>
+        </div>
+    </div>
+    <div class="row" id="row-1look">
+        <div class="gimmick-info">
+            <div class="gimmick-name">👁️ 早視線</div>
+            <div class="nav-container"><div class="nav-text nav-shin">📢 【真】視線見ない</div><div class="nav-text nav-gi">📢 【偽】視線見る</div></div>
+        </div>
+        <div class="btn-group">
+            <button class="choice-btn btn-shin" onclick="setSelect('row-1look', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-1look', 'gi')">偽</button>
         </div>
     </div>
     <div class="row" id="row-element1">
         <div class="gimmick-info">
-            <div class="gimmick-name">1回目 つなみ or ほのお</div>
-            <div class="nav-container">
-                <div class="nav-text nav-shin">📢 【真】水：ドーナツ / 炎：タケノコ</div>
-                <div class="nav-text nav-gi">📢 【偽】水：タケノコ / 炎：ドーナツ</div>
-            </div>
+            <div class="gimmick-name">🌊 1回目 つなみ or ほのお</div>
+            <div class="nav-container"><div class="nav-text nav-shin">📢 【真】水：ドーナツ / 炎：タケノコ</div><div class="nav-text nav-gi">📢 【偽】水：タケノコ / 炎：ドーナツ</div></div>
         </div>
         <div class="btn-group">
             <button class="choice-btn btn-shin" onclick="setSelect('row-element1', 'shin')">真</button>
@@ -160,33 +183,48 @@
         </div>
     </div>
 
-    <div class="section-title">【第2フェーズ】</div>
-    <div class="row" id="row-gc2">
+    <div class="section-title">【2回目グランドクロス】</div>
+    <div class="row" id="row-2water">
         <div class="gimmick-info">
-            <div class="gimmick-name">2回目 グランドクロス</div>
-            <div class="nav-container">
-                <div class="nav-text nav-shin">📢 【真】水頭/ライトニング散開/視線見ない</div>
-                <div class="nav-text nav-gi">📢 【偽】ライトニング頭/水散開/視線見る</div>
-            </div>
+            <div class="gimmick-name">💧 遅水</div>
+            <div class="nav-container"><div class="nav-text nav-shin">📢 【真】水頭割り参加</div><div class="nav-text nav-gi">📢 【偽】水散開（頭割り入らない）</div></div>
         </div>
         <div class="btn-group">
-            <button class="choice-btn btn-shin" onclick="setSelect('row-gc2', 'shin')">真</button>
-            <button class="choice-btn btn-gi" onclick="setSelect('row-gc2', 'gi')">偽</button>
+            <button class="choice-btn btn-shin" onclick="setSelect('row-2water', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-2water', 'gi')">偽</button>
+        </div>
+    </div>
+    <div class="row" id="row-2light">
+        <div class="gimmick-info">
+            <div class="gimmick-name">⚡ 遅ライトニング</div>
+            <div class="nav-container"><div class="nav-text nav-shin">📢 【真】ライトニング散開</div><div class="nav-text nav-gi">📢 【偽】ライトニング頭割り</div></div>
+        </div>
+        <div class="btn-group">
+            <button class="choice-btn btn-shin" onclick="setSelect('row-2light', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-2light', 'gi')">偽</button>
+        </div>
+    </div>
+    <div class="row" id="row-2look">
+        <div class="gimmick-info">
+            <div class="gimmick-name">👁️ 遅視線</div>
+            <div class="nav-container"><div class="nav-text nav-shin">📢 【真】視線見ない</div><div class="nav-text nav-gi">📢 【偽】視線見る</div></div>
+        </div>
+        <div class="btn-group">
+            <button class="choice-btn btn-shin" onclick="setSelect('row-2look', 'shin')">真</button>
+            <button class="choice-btn btn-gi" onclick="setSelect('row-2look', 'gi')">偽</button>
         </div>
     </div>
     <div class="row" id="row-element2">
         <div class="gimmick-info">
-            <div class="gimmick-name">2回目 つなみ or ほのお</div>
-            <div class="nav-container">
-                <div class="nav-text nav-shin">📢 【真】水：ドーナツ / 炎：タケノコ</div>
-                <div class="nav-text nav-gi">📢 【偽】水：タケノコ / 炎：ドーナツ</div>
-            </div>
+            <div class="gimmick-name">🔥 2回目 つなみ or ほのお</div>
+            <div class="nav-container"><div class="nav-text nav-shin">📢 【真】水：ドーナツ / 炎：タケノコ</div><div class="nav-text nav-gi">📢 【偽】水：タケノコ / 炎：ドーナツ</div></div>
         </div>
         <div class="btn-group">
             <button class="choice-btn btn-shin" onclick="setSelect('row-element2', 'shin')">真</button>
             <button class="choice-btn btn-gi" onclick="setSelect('row-element2', 'gi')">偽</button>
         </div>
     </div>
+
 
     <div class="section-title">【単体・都度確認】</div>
     <div class="row" id="row-thunda">
@@ -232,19 +270,20 @@
     <script>
         function setSelect(rowId, type) {
             const row = document.getElementById(rowId);
-            if ((type === 'shin' && row.classList.contains('active-shin')) || 
-                (type === 'gi' && row.classList.contains('active-gi'))) {
-                row.classList.remove('active-shin', 'active-gi');
-                return;
+            if (type === 'shin') {
+                row.classList.toggle('active-shin');
+                row.classList.remove('active-gi');
+            } else if (type === 'gi') {
+                row.classList.toggle('active-gi');
+                row.classList.remove('active-shin');
             }
-            row.classList.remove('active-shin', 'active-gi');
-            if (type === 'shin') row.classList.add('active-shin');
-            if (type === 'gi') row.classList.add('active-gi');
         }
 
         function resetAll() {
             const rows = document.querySelectorAll('.row');
-            rows.forEach(row => row.classList.remove('active-shin', 'active-gi'));
+            rows.forEach(row => {
+                row.className = 'row';
+            });
         }
     </script>
 </body>
