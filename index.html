@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>絶妖星乱舞P4 カンペ (完全固定版)</title>
+    <title>絶妖星乱舞P4 カンペ (iPhone8版)</title>
     <style>
         html, body {
             margin: 0;
@@ -11,14 +11,14 @@
             background-color: #0f0f0f;
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            overflow: hidden; /* ★スマホ全体の縦・横スクロールを完全に禁止 */
+            overflow: hidden; /* 縦・横スクロールを完全に禁止 */
             width: 100vw;
             height: 100vh;
             -webkit-tap-highlight-color: transparent;
         }
         body {
             box-sizing: border-box;
-            padding: 8px 12px;
+            padding: 4px 8px; /* iPhone8の狭い上下余白をギリギリまで削減 */
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
@@ -28,12 +28,12 @@
             align-items: center;
             justify-content: space-between;
             border-bottom: 2px solid #ffcc00;
-            padding-bottom: 6px;
-            margin-bottom: 4px;
+            padding-bottom: 4px;
+            margin-bottom: 2px;
             flex-shrink: 0;
         }
         .title {
-            font-size: 16px;
+            font-size: 14px; /* タイトルを少しコンパクトに */
             color: #ffcc00;
             font-weight: bold;
         }
@@ -41,31 +41,31 @@
             background: #ff3333;
             color: #fff;
             border: none;
-            padding: 6px 14px;
-            border-radius: 5px;
-            font-size: 13px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
             font-weight: bold;
         }
         .section-title {
-            font-size: 11px;
+            font-size: 10px; /* セクション文字を最小化 */
             color: #aaa;
-            margin: 6px 0 2px 0;
+            margin: 4px 0 2px 0;
             font-weight: bold;
             border-left: 3px solid #ffcc00;
-            padding-left: 5px;
+            padding-left: 4px;
             flex-shrink: 0;
         }
         
-        /* 画面を圧迫しないよう高さを固定したコンパクト行 */
+        /* iPhone8の画面内に7つ詰め込むための極薄行 */
         .row {
             background: rgba(255, 255, 255, 0.04);
-            margin-bottom: 3px;
-            padding: 6px 8px;
-            border-radius: 6px;
-            border-left: 4px solid #666;
+            margin-bottom: 2px;
+            padding: 4px 6px; /* 縦の余白を極限までカット */
+            border-radius: 5px;
+            border-left: 3px solid #666;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
             flex-shrink: 0;
         }
         .gimmick-info {
@@ -74,38 +74,37 @@
         }
         .gimmick-name {
             font-weight: bold;
-            font-size: 13px;
+            font-size: 12px; /* 視認性を保ちつつ縮小 */
             color: #fff;
         }
         
-        /* ★最初から文字の表示スペース（高さ）を確保しておくエリア */
+        /* ナビゲーションの高さも15pxに縮小 */
         .nav-container {
-            height: 18px; /* 高さを完全に固定 */
+            height: 15px; 
             margin-top: 1px;
             position: relative;
         }
         .nav-text {
-            font-size: 11px;
+            font-size: 10px; /* iPhone8でも読める細かなフォント */
             color: #ffcc00;
             font-weight: bold;
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            white-space: nowrap; /* 画面外に文字が折り返して伸びるのを防ぐ */
+            white-space: nowrap; 
             overflow: hidden;
             text-overflow: ellipsis;
-            opacity: 0; /* 初期状態は透明 */
-            transition: opacity 0.15s ease;
+            opacity: 0; 
+            transition: opacity 0.1s ease;
         }
-        /* ボタンが押されたら不透明にして出現させる（全体の高さは不変） */
         .active-shin .nav-shin { opacity: 1; }
         .active-gi .nav-gi { opacity: 1; }
 
-        /* 片手で押しやすい並列特大ボタン（高さだけ少しシャープに調整） */
+        /* ボタンの縦幅を「iPhone8の画面内に収まる限界」に調整 */
         .btn-group {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             width: 100%;
         }
         .choice-btn {
@@ -113,10 +112,10 @@
             border: 1px solid #555;
             background: #222;
             color: #ccc;
-            padding: 10px 0; /* スクロール枠から絶対にはみ出さない黄金比の縦幅 */
-            font-size: 14px;
+            padding: 6px 0; /* 縦幅を10px➔6pxに削り、はみ出しを完全防止 */
+            font-size: 12px;
             font-weight: bold;
-            border-radius: 6px;
+            border-radius: 5px;
         }
         
         /* 真＝青 / 偽＝赤 */
