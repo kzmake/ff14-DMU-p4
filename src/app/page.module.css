@@ -1,0 +1,130 @@
+.headerArea {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 2px solid #ffcc00;
+  padding-bottom: 3px;
+  margin-bottom: 2px;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 13px;
+  color: #ffcc00;
+  font-weight: bold;
+}
+
+.resetBtn {
+  background: #ff3333;
+  color: #fff;
+  border: none;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.sectionTitle {
+  font-size: 9px;
+  color: #ccc;
+  margin: 2px 0 1px 0;
+  font-weight: bold;
+  border-left: 2px solid #ffcc00;
+  padding-left: 4px;
+  flex-shrink: 0;
+}
+
+/* 横並び配置 */
+.row {
+  background: rgba(255, 255, 255, 0.03);
+  margin-bottom: 2px;
+  padding: 3px 5px;
+  border-radius: 4px;
+  border-left: 3px solid #666;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* 左側のテキストエリア（ボタンに絶対被らないパーセント幅に制限） */
+.gimmickInfo {
+  width: 70%; /* 右側のボタン用に30%のスペースを確実に空ける */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.gimmickName {
+  font-weight: bold;
+  font-size: 11px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* はみ出しを確実に防止するコンテナ設定 */
+.navContainer {
+  height: 12px;
+  position: relative;
+  width: 100%; /* 親要素の70%の幅の中に完全に閉じ込める */
+}
+
+.navText {
+  font-size: 9px;
+  color: #ffcc00;
+  font-weight: bold;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 0.05s ease;
+}
+
+/* 右側の独立したボタンエリア */
+.btnGroup {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  width: 90px;
+}
+
+.choiceBtn {
+  flex: 1;
+  border: 1px solid #444;
+  background: #222;
+  color: #ccc;
+  padding: 6px 0;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* 真＝青 / 偽＝赤 */
+.row.activeShin {
+  border-left-color: #4dadff;
+  background: rgba(77, 173, 255, 0.08);
+}
+
+.row.activeGi {
+  border-left-color: #ff4d4d;
+  background: rgba(255, 77, 77, 0.08);
+}
+
+.row.activeShin .btnShin {
+  background: #4dadff;
+  color: #fff;
+  border-color: #3399ff;
+}
+
+.row.activeGi .btnGi {
+  background: #ff4d4d;
+  color: #fff;
+  border-color: #ff3333;
+}
