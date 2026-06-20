@@ -13,16 +13,18 @@ body {
 
 html {
   /* ビューポートに合わせて全体を拡大縮小（1画面に収める基準サイズ）。
-     1rem = 画面の小さい方の辺に連動。各サイズは rem 指定で追従する。 */
-  font-size: clamp(8px, calc(0.45vw + 0.9vh), 22px);
+     1rem = 画面の小さい方の辺に連動。各サイズは rem 指定で追従する。
+     iPad など縦長で溢れないよう vh 寄与を抑え、気持ち小さめ（約90%）に。 */
+  font-size: clamp(8px, calc(0.45vw + 0.75vh), 20px);
 }
 
 body {
   box-sizing: border-box;
-  padding: 2px 6px;
+  /* 縦は約90%に収め、上下に余白を作って中央寄せ（iPadで端が切れないように） */
+  padding: 5vh 6px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 * {
