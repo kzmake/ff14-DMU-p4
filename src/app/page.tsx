@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./page.module.css";
 
 type Tone = "blue" | "red" | "thunder" | "ice" | "both" | "safe" | "green";
@@ -278,6 +278,23 @@ export default function Home() {
   const [showPersonal, setShowPersonal] = useState(false);
   // 個人ギミックの「自分用マーカー」点灯（"rowId:colKey" -> bool）
   const [marks, setMarks] = useState<Record<string, boolean>>({});
+  // フルスクリーン状態
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // フルスクリーン状態の変化を監視（Escでの解除なども反映）
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen?.();
+    }
+  };
 
   const toggleMark = (id: string) => setMarks((prev) => ({ ...prev, [id]: !prev[id] }));
 
@@ -310,7 +327,18 @@ export default function Home() {
   return (
     <>
       <div className={styles.headerArea}>
-        <div className={styles.title}>🤡 絶妖星乱舞 P4 真偽判定</div>
+        <div className={styles.titleArea}>
+          <button
+            type="button"
+            className={styles.fsBtn}
+            onClick={toggleFullscreen}
+            aria-label={isFullscreen ? "フルスクリーン解除" : "フルスクリーン"}
+            title={isFullscreen ? "フルスクリーン解除" : "フルスクリーン"}
+          >
+            {isFullscreen ? "🗗" : "⛶"}
+          </button>
+          <div className={styles.title}>🤡 絶妖星乱舞 P4 真偽判定</div>
+        </div>
         <div className={styles.headerBtns}>
           <button
             type="button"
