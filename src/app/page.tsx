@@ -379,8 +379,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 表全体：中身の高さにフィット（h-fit） */}
-      <div className="flex h-fit flex-col gap-1">
+      {/* 表全体：利用可能な高さいっぱいに広げ、各行で等分する */}
+      <div className="flex h-full min-h-0 flex-1 flex-col gap-1">
         {/* 用途見出し行：本体＝記憶、それ以外＝タイムライン */}
         <div className="grid shrink-0 gap-[3px]" style={{ gridTemplateColumns: gridTemplate }}>
           <div />
@@ -460,7 +460,7 @@ export default function Home() {
           return (
             <div
               key={row.id}
-              className={`grid min-h-[3rem] flex-1 gap-[3px] rounded ${zebra}`}
+              className={`grid min-h-0 flex-1 gap-[3px] rounded ${zebra}`}
               style={{ gridTemplateColumns: gridTemplate }}
             >
               <div className="flex items-center justify-center border-l-2 border-[#ffcc00] px-[2px] text-center text-[0.77rem] font-bold leading-[1.2] text-white">

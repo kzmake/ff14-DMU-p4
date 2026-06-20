@@ -22,11 +22,11 @@ html {
 
 body {
   box-sizing: border-box;
-  /* 縦は約90%に収め、上下に余白を作って中央寄せ（iPadで端が切れないように） */
+  /* 縦は約90%に収め、上下に余白を作る（iPadで端が切れないように） */
   padding: 5vh 6px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 * {
