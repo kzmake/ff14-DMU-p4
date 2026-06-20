@@ -22,11 +22,11 @@ html {
 
 body {
   box-sizing: border-box;
-  /* 画面を100%使い切る（端の安全エリアぶんだけ最小マージン） */
-  padding: env(safe-area-inset-top) 4px env(safe-area-inset-bottom) 4px;
+  /* コンテンツを縦約90%サイズに収め、上下に余白を作って中央寄せ */
+  padding: calc(5vh + env(safe-area-inset-top)) 4px calc(5vh + env(safe-area-inset-bottom)) 4px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 * {
