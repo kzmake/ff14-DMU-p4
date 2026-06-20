@@ -271,6 +271,19 @@ const outlineClass: Record<Tone, string> = {
   green: "bg-transparent text-[#7fd9a0] border-[1.5px] border-[#3fbf6f]",
 };
 
+// フォントサイズ（大中小）。html の --font-scale 倍率にマッピング。
+type FontSize = "small" | "medium" | "large";
+const FONT_SCALE: Record<FontSize, number> = {
+  small: 0.8,
+  medium: 1,
+  large: 1.25,
+};
+const FONT_OPTIONS: { key: FontSize; label: string }[] = [
+  { key: "large", label: "大" },
+  { key: "medium", label: "中" },
+  { key: "small", label: "小" },
+];
+
 // 結果セル共通レイアウト（中央寄せ・枠線等）
 const linkedResultBase =
   "flex flex-1 min-h-0 items-center justify-center text-center text-[0.77rem] font-bold rounded leading-[1.15] p-px whitespace-pre-line break-all";
@@ -284,6 +297,13 @@ export default function Home() {
   const [marks, setMarks] = useState<Record<string, boolean>>({});
   // フルスクリーン状態
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // フォントサイズ（大中小）。既定は大。
+  const [fontSize, setFontSize] = useState<FontSize>("large");
+
+  // 選択したフォントサイズを html の --font-scale に反映
+  useEffect(() => {
+    document.documentElement.style.setProperty("--font-scale", String(FONT_SCALE[fontSize]));
+  }, [fontSize]);
 
   // フルスクリーン状態の変化を監視（Escでの解除なども反映）
   useEffect(() => {
@@ -345,6 +365,24 @@ export default function Home() {
           <div className="text-base font-bold text-[#ffcc00]">🤡 絶妖星乱舞 P4 真偽判定</div>
         </div>
         <div className="flex items-center gap-1.5">
+          {/* フォントサイズ切替（大中小） */}
+          <div className="inline-flex overflow-hidden rounded border border-[#555]">
+            {FONT_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                aria-pressed={fontSize === opt.key}
+                className={`cursor-pointer border-none px-2 py-[3px] text-[0.85rem] font-bold ${
+                  fontSize === opt.key
+                    ? "bg-[#ffcc00] text-[#0f0f0f]"
+                    : "bg-[#1c1c1c] text-[#aaa] hover:bg-[#2a2a2a]"
+                }`}
+                onClick={() => setFontSize(opt.key)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             role="switch"
