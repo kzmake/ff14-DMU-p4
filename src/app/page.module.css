@@ -14,6 +14,12 @@
   font-weight: bold;
 }
 
+.headerBtns {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
 .resetBtn {
   background: #ff3333;
   color: #fff;
@@ -25,6 +31,23 @@
   cursor: pointer;
 }
 
+.toggleBtn {
+  background: #333;
+  color: #aaa;
+  border: 1px solid #555;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.toggleOn {
+  background: #ffcc00;
+  color: #0f0f0f;
+  border-color: #e6b800;
+}
+
 /* 表全体 */
 .grid {
   display: flex;
@@ -34,18 +57,48 @@
   min-height: 0;
 }
 
-/* 1行：左に行見出し + 5列 */
+/* 1行：左に行見出し + 9列（本体 + 8列） */
 .gridRow {
   display: grid;
-  grid-template-columns: 60px repeat(5, 1fr);
-  gap: 4px;
+  grid-template-columns: 52px repeat(9, 1fr);
+  gap: 3px;
   flex: 1;
   min-height: 0;
+}
+
+/* グループ見出し（早加速 / 遅加速） */
+.groupHead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: #0f0f0f;
+  background: #ffcc00;
+  border-radius: 3px;
+  padding: 2px 1px;
+  line-height: 1.1;
+}
+
+.groupBlank {
+  background: transparent;
 }
 
 /* ヘッダー行は高さを抑える */
 .headRow {
   flex: 0 0 auto;
+}
+
+/* 行の交互背景（ゼブラ） */
+.zebraDark {
+  background: #1c1c1c;
+  border-radius: 4px;
+}
+
+.zebraBlack {
+  background: #000;
+  border-radius: 4px;
 }
 
 /* 横軸＝列見出し */
@@ -54,13 +107,13 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: bold;
   color: #ffcc00;
   background: rgba(255, 204, 0, 0.08);
-  border-radius: 4px;
-  padding: 3px 2px;
-  line-height: 1.2;
+  border-radius: 3px;
+  padding: 2px 1px;
+  line-height: 1.1;
 }
 
 /* 縦軸＝行見出し */
@@ -108,7 +161,7 @@
   background: #222;
   color: #ccc;
   padding: 0;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: bold;
   border-radius: 4px;
   cursor: pointer;
@@ -153,6 +206,33 @@
   border-color: #2fbf5f;
 }
 
+.onGreen {
+  background: #3fbf6f;
+  color: #fff;
+  border-color: #2fa85c;
+}
+
+/* 個人ギミックの自分用マーカー（押すと緑に光る） */
+.markBtn {
+  cursor: pointer;
+  border: 2px solid #3fbf6f;
+  width: 100%;
+  font-family: inherit;
+}
+
+/* 未点灯：緑枠だけの控えめ表示 */
+.markDim {
+  background: rgba(63, 191, 111, 0.12);
+  color: #8fe6ad;
+}
+
+/* 点灯：緑にガッツリ光る */
+.markLit {
+  background: #3fbf6f;
+  color: #fff;
+  box-shadow: 0 0 8px 2px rgba(63, 191, 111, 0.8);
+}
+
 /* 処理するアクション（ボタンの下に小さく1行） */
 .action {
   flex: 0 0 auto;
@@ -174,11 +254,13 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: bold;
   border-radius: 4px;
-  line-height: 1.2;
-  padding: 2px;
+  line-height: 1.15;
+  padding: 1px;
+  white-space: pre-line; /* \n で改行 */
+  word-break: break-all; /* 狭い列でもはみ出さない */
 }
 
 /* 本体未選択のときのプレースホルダー */
