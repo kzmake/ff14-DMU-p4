@@ -4,7 +4,7 @@
   justify-content: space-between;
   border-bottom: 2px solid #ffcc00;
   padding-bottom: 3px;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   flex-shrink: 0;
 }
 
@@ -25,106 +25,170 @@
   cursor: pointer;
 }
 
-.sectionTitle {
-  font-size: 9px;
-  color: #ccc;
-  margin: 2px 0 1px 0;
-  font-weight: bold;
-  border-left: 2px solid #ffcc00;
-  padding-left: 4px;
-  flex-shrink: 0;
-}
-
-/* 横並び配置 */
-.row {
-  background: rgba(255, 255, 255, 0.03);
-  margin-bottom: 2px;
-  padding: 3px 5px;
-  border-radius: 4px;
-  border-left: 3px solid #666;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-/* 左側のテキストエリア（ボタンに絶対被らないパーセント幅に制限） */
-.gimmickInfo {
-  width: 70%; /* 右側のボタン用に30%のスペースを確実に空ける */
+/* 表全体 */
+.grid {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-}
-
-.gimmickName {
-  font-weight: bold;
-  font-size: 11px;
-  color: #fff;
-  white-space: nowrap;
-}
-
-/* はみ出しを確実に防止するコンテナ設定 */
-.navContainer {
-  height: 12px;
-  position: relative;
-  width: 100%; /* 親要素の70%の幅の中に完全に閉じ込める */
-}
-
-.navText {
-  font-size: 9px;
-  color: #ffcc00;
-  font-weight: bold;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  opacity: 0;
-  transition: opacity 0.05s ease;
-}
-
-/* 右側の独立したボタンエリア */
-.btnGroup {
-  display: flex;
   gap: 4px;
-  flex-shrink: 0;
-  width: 90px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 1行：左に行見出し + 5列 */
+.gridRow {
+  display: grid;
+  grid-template-columns: 60px repeat(5, 1fr);
+  gap: 4px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ヘッダー行は高さを抑える */
+.headRow {
+  flex: 0 0 auto;
+}
+
+/* 横軸＝列見出し */
+.colHead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: #ffcc00;
+  background: rgba(255, 204, 0, 0.08);
+  border-radius: 4px;
+  padding: 3px 2px;
+  line-height: 1.2;
+}
+
+/* 縦軸＝行見出し */
+.rowHead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: #fff;
+  border-left: 2px solid #ffcc00;
+  padding: 0 2px;
+  line-height: 1.2;
+}
+
+/* セル（空セルは枠なし） */
+.cell {
+  border-radius: 4px;
+  min-width: 0;
+}
+
+.cellActive {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #333;
+  padding: 3px;
+}
+
+/* ボタン群（列数は inline style で指定）。セルの空きを最大限使う */
+.btnGroup {
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 3px;
+  flex: 1;
+  min-height: 0;
 }
 
 .choiceBtn {
-  flex: 1;
+  width: 100%;
+  height: 100%;
   border: 1px solid #444;
   background: #222;
   color: #ccc;
-  padding: 6px 0;
-  font-size: 11px;
+  padding: 0;
+  font-size: 13px;
   font-weight: bold;
   border-radius: 4px;
   cursor: pointer;
+  min-width: 0;
+  min-height: 0;
 }
 
-/* 真＝青 / 偽＝赤 */
-.row.activeShin {
-  border-left-color: #4dadff;
-  background: rgba(77, 173, 255, 0.08);
-}
-
-.row.activeGi {
-  border-left-color: #ff4d4d;
-  background: rgba(255, 77, 77, 0.08);
-}
-
-.row.activeShin .btnShin {
+/* 選択中のボタン配色 */
+.onBlue {
   background: #4dadff;
   color: #fff;
   border-color: #3399ff;
 }
 
-.row.activeGi .btnGi {
+.onRed {
   background: #ff4d4d;
   color: #fff;
   border-color: #ff3333;
+}
+
+.onThunder {
+  background: #ffd633;
+  color: #000;
+  border-color: #e6bd00;
+}
+
+.onIce {
+  background: #8fe3ff;
+  color: #003344;
+  border-color: #5cc8e6;
+}
+
+.onBoth {
+  background: #ff9933;
+  color: #000;
+  border-color: #e67e00;
+}
+
+.onSafe {
+  background: #4ddd7e;
+  color: #003311;
+  border-color: #2fbf5f;
+}
+
+/* 処理するアクション（ボタンの下に小さく1行） */
+.action {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: bold;
+  color: #ffcc00;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 13px;
+}
+
+/* 本体連動セル：自動表示される結果（セル全面を使う） */
+.linkedResult {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 13px;
+  font-weight: bold;
+  border-radius: 4px;
+  line-height: 1.2;
+  padding: 2px;
+}
+
+/* 本体未選択のときのプレースホルダー */
+.linkedWaiting {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 11px;
+  color: #777;
 }
