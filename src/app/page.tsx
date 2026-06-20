@@ -380,7 +380,7 @@ export default function Home() {
       </div>
 
       {/* 表全体：利用可能な高さいっぱいに広げ、各行で等分する */}
-      <div className="flex h-full min-h-0 flex-1 flex-col gap-1">
+      <div className="flex h-full min-h-0 flex-1 flex-col gap-[2px]">
         {/* 用途見出し行：本体＝記憶、それ以外＝タイムライン */}
         <div className="grid shrink-0 gap-[3px]" style={{ gridTemplateColumns: gridTemplate }}>
           <div />

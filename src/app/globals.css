@@ -22,8 +22,8 @@ html {
 
 body {
   box-sizing: border-box;
-  /* 縦は約90%に収め、上下に余白を作る（iPadで端が切れないように） */
-  padding: 5vh 6px;
+  /* 画面を100%使い切る（端の安全エリアぶんだけ最小マージン） */
+  padding: env(safe-area-inset-top) 4px env(safe-area-inset-bottom) 4px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
