@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import styles from "./page.module.css";
 
 type Tone = "blue" | "red" | "thunder" | "ice" | "both" | "safe" | "green";
 
@@ -250,26 +249,31 @@ const ROWS: Row[] = [
   },
 ];
 
+// 選択中ボタン・結果セルの塗りつぶし配色（Tailwind 任意値で元の色を維持）
 const toneClass: Record<Tone, string> = {
-  blue: styles.onBlue,
-  red: styles.onRed,
-  thunder: styles.onThunder,
-  ice: styles.onIce,
-  both: styles.onBoth,
-  safe: styles.onSafe,
-  green: styles.onGreen,
+  blue: "bg-[#4dadff] text-white border-[#3399ff]",
+  red: "bg-[#ff4d4d] text-white border-[#ff3333]",
+  thunder: "bg-[#a64dff] text-white border-[#8a2be2]",
+  ice: "bg-[#eaf7ff] text-[#2a5a6e] border-[#bfe6f5]",
+  both: "bg-[#ff9933] text-black border-[#e67e00]",
+  safe: "bg-[#4ddd7e] text-[#003311] border-[#2fbf5f]",
+  green: "bg-[#3fbf6f] text-white border-[#2fa85c]",
 };
 
 // 塗りつぶしなし・枠線だけ版（2候補表示用）
 const outlineClass: Record<Tone, string> = {
-  blue: styles.outBlue,
-  red: styles.outRed,
-  thunder: styles.outThunder,
-  ice: styles.outIce,
-  both: styles.outBoth,
-  safe: styles.outSafe,
-  green: styles.outGreen,
+  blue: "bg-transparent text-[#8fcaff] border-[1.5px] border-[#4dadff]",
+  red: "bg-transparent text-[#ff9999] border-[1.5px] border-[#ff4d4d]",
+  thunder: "bg-transparent text-[#c79bff] border-[1.5px] border-[#a64dff]",
+  ice: "bg-transparent text-[#cdeeff] border-[1.5px] border-[#bfe6f5]",
+  both: "bg-transparent text-[#ffc080] border-[1.5px] border-[#ff9933]",
+  safe: "bg-transparent text-[#8fe8b0] border-[1.5px] border-[#4ddd7e]",
+  green: "bg-transparent text-[#7fd9a0] border-[1.5px] border-[#3fbf6f]",
 };
+
+// 結果セル共通レイアウト（中央寄せ・枠線等）
+const linkedResultBase =
+  "flex flex-1 min-h-0 items-center justify-center text-center text-[0.77rem] font-bold rounded leading-[1.15] p-px whitespace-pre-line break-all";
 
 export default function Home() {
   // rowId -> 選択した option.key
@@ -326,79 +330,105 @@ export default function Home() {
 
   return (
     <>
-      <div className={styles.headerArea}>
-        <div className={styles.titleArea}>
+      {/* ヘッダー */}
+      <div className="flex shrink-0 items-center justify-between border-b-2 border-[#ffcc00] mb-1 pb-[3px]">
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
-            className={styles.fsBtn}
+            className="inline-flex h-[1.6rem] w-[1.6rem] cursor-pointer items-center justify-center rounded border border-[#555] bg-[#1c1c1c] text-[0.95rem] leading-none text-[#ffcc00] hover:border-[#ffcc00] hover:bg-[#2a2a2a]"
             onClick={toggleFullscreen}
             aria-label={isFullscreen ? "フルスクリーン解除" : "フルスクリーン"}
             title={isFullscreen ? "フルスクリーン解除" : "フルスクリーン"}
           >
             {isFullscreen ? "🗗" : "⛶"}
           </button>
-          <div className={styles.title}>🤡 絶妖星乱舞 P4 真偽判定</div>
+          <div className="text-base font-bold text-[#ffcc00]">🤡 絶妖星乱舞 P4 真偽判定</div>
         </div>
-        <div className={styles.headerBtns}>
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
             role="switch"
             aria-checked={showPersonal}
-            className={`${styles.toggleSwitch} ${showPersonal ? styles.toggleSwitchOn : ""}`}
+            className="group inline-flex cursor-pointer items-center gap-1.5 border-none bg-transparent p-0"
             onClick={() => setShowPersonal((v) => !v)}
           >
-            <span className={styles.toggleSwitchLabel}>個人ギミック</span>
-            <span className={styles.toggleSwitchTrack}>
-              <span className={styles.toggleSwitchThumb} />
+            <span
+              className={`text-[0.85rem] font-bold ${showPersonal ? "text-[#ffcc00]" : "text-[#aaa]"}`}
+            >
+              個人ギミック
+            </span>
+            <span
+              className={`relative h-[18px] w-[34px] rounded-[9px] border transition-[background,border-color] duration-150 ${
+                showPersonal ? "border-[#e6b800] bg-[#ffcc00]" : "border-[#555] bg-[#444]"
+              }`}
+            >
+              <span
+                className={`absolute top-px left-px h-[14px] w-[14px] rounded-full transition-[transform,background] duration-150 ${
+                  showPersonal ? "translate-x-4 bg-[#0f0f0f]" : "bg-[#ccc]"
+                }`}
+              />
             </span>
           </button>
-          <button type="button" className={styles.resetBtn} onClick={resetAll}>
+          <button
+            type="button"
+            className="cursor-pointer rounded border-none bg-[#ff3333] px-2 py-[3px] text-[0.85rem] font-bold text-white"
+            onClick={resetAll}
+          >
             ALLリセット
           </button>
         </div>
       </div>
 
-      <div className={styles.grid}>
+      {/* 表全体：中身の高さにフィット（h-fit） */}
+      <div className="flex h-fit flex-col gap-1">
         {/* 用途見出し行：本体＝記憶、それ以外＝タイムライン */}
-        <div
-          className={`${styles.gridRow} ${styles.headRow}`}
-          style={{ gridTemplateColumns: gridTemplate }}
-        >
-          <div className={styles.rowHead} />
-          <div className={styles.usageMemory} style={{ gridColumn: "span 1" }}>
-            <span className={styles.usageIcon}>🧠</span>
-            <span className={styles.usageText}>記憶</span>
+        <div className="grid shrink-0 gap-[3px]" style={{ gridTemplateColumns: gridTemplate }}>
+          <div />
+          <div
+            className="flex items-center justify-center gap-[3px] rounded-[5px] border border-[#b07fe6] bg-[linear-gradient(135deg,#8a4fd0_0%,#5e2a99_100%)] px-[2px] py-1 text-center text-[0.77rem] font-extrabold leading-[1.1] text-white [box-shadow:inset_0_1px_0_rgba(255,255,255,0.25),0_0_6px_rgba(138,79,208,0.5)] [text-shadow:0_1px_1px_rgba(0,0,0,0.4)]"
+            style={{ gridColumn: "span 1" }}
+          >
+            <span className="text-[0.92rem] leading-none [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]">
+              🧠
+            </span>
+            <span>記憶</span>
           </div>
           <div
-            className={styles.usageTimeline}
+            className="flex items-center justify-center gap-1 rounded-[5px] border border-[#4fd6d6] bg-[linear-gradient(135deg,#2bb3b3_0%,#146e6e_100%)] px-[2px] py-1 text-center text-[0.77rem] font-extrabold leading-[1.1] tracking-[1.5px] text-white [box-shadow:inset_0_1px_0_rgba(255,255,255,0.25),0_0_6px_rgba(43,179,179,0.5)] [text-shadow:0_1px_1px_rgba(0,0,0,0.4)]"
             style={{ gridColumn: `span ${visibleColumns.length - 1}` }}
           >
-            <span className={styles.usageIcon}>⏱</span>
-            <span className={styles.usageText}>タイムライン</span>
+            <span className="text-[0.92rem] leading-none [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]">
+              ⏱
+            </span>
+            <span className="tracking-[inherit]">タイムライン</span>
           </div>
         </div>
 
         {/* グループ見出し行 */}
-        <div
-          className={`${styles.gridRow} ${styles.headRow}`}
-          style={{ gridTemplateColumns: gridTemplate }}
-        >
-          <div className={styles.rowHead} />
+        <div className="grid shrink-0 gap-[3px]" style={{ gridTemplateColumns: gridTemplate }}>
+          <div />
           {visibleColumns.map((col) => (
-            <div key={col.key} className={col.group ? styles.groupHead : styles.groupBlank}>
+            <div
+              key={col.key}
+              className={
+                col.group
+                  ? "flex items-center justify-center rounded-[3px] bg-[#ffcc00] px-px py-[2px] text-center text-[0.77rem] font-bold leading-[1.1] text-[#0f0f0f]"
+                  : "bg-transparent"
+              }
+            >
               {col.group}
             </div>
           ))}
         </div>
 
         {/* 列名ヘッダー行 */}
-        <div
-          className={`${styles.gridRow} ${styles.headRow}`}
-          style={{ gridTemplateColumns: gridTemplate }}
-        >
-          <div className={styles.rowHead} />
+        <div className="grid shrink-0 gap-[3px]" style={{ gridTemplateColumns: gridTemplate }}>
+          <div />
           {visibleColumns.map((col) => (
-            <div key={col.key} className={styles.colHead}>
+            <div
+              key={col.key}
+              className="flex items-center justify-center rounded-[3px] bg-[rgba(255,204,0,0.08)] px-px py-[2px] text-center text-[0.69rem] font-bold leading-[1.1] text-[#ffcc00]"
+            >
               {col.label}
             </div>
           ))}
@@ -407,7 +437,7 @@ export default function Home() {
         {/* 縦軸＝判断していく行 */}
         {ROWS.map((row, rowIndex) => {
           const activeKey = selections[row.id] ?? null;
-          const zebra = rowIndex % 2 === 0 ? styles.zebraDark : styles.zebraBlack;
+          const zebra = rowIndex % 2 === 0 ? "bg-[#1c1c1c]" : "bg-black";
 
           // ほのお/つなみ逆連動：参照元の種別の逆だけを表示
           let displayOptions = row.options;
@@ -430,18 +460,22 @@ export default function Home() {
           return (
             <div
               key={row.id}
-              className={`${styles.gridRow} ${zebra}`}
+              className={`grid min-h-[3rem] flex-1 gap-[3px] rounded ${zebra}`}
               style={{ gridTemplateColumns: gridTemplate }}
             >
-              <div className={styles.rowHead}>{row.name}</div>
+              <div className="flex items-center justify-center border-l-2 border-[#ffcc00] px-[2px] text-center text-[0.77rem] font-bold leading-[1.2] text-white">
+                {row.name}
+              </div>
 
               {/* 本体列：操作ボタン */}
-              <div className={`${styles.cell} ${styles.cellActive}`}>
+              <div className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]">
                 {mirrorWaiting ? (
-                  <div className={styles.linkedWaiting}>↑1回目を選択</div>
+                  <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.85rem] text-[#777]">
+                    ↑1回目を選択
+                  </div>
                 ) : (
                   <div
-                    className={styles.btnGroup}
+                    className="grid min-h-0 flex-1 auto-rows-fr gap-[3px]"
                     style={{
                       gridTemplateColumns: `repeat(${displayOptions.length === 4 ? 2 : displayOptions.length}, 1fr)`,
                     }}
@@ -452,9 +486,9 @@ export default function Home() {
                         <button
                           key={opt.key}
                           type="button"
-                          className={[styles.choiceBtn, isActive ? toneClass[opt.tone] : ""]
-                            .filter(Boolean)
-                            .join(" ")}
+                          className={`h-full w-full min-h-0 min-w-0 cursor-pointer rounded border p-0 text-[0.85rem] font-bold ${
+                            isActive ? toneClass[opt.tone] : "border-[#444] bg-[#222] text-[#ccc]"
+                          }`}
                           onClick={() => setSelect(row.id, opt.key)}
                         >
                           {opt.label}
@@ -470,26 +504,31 @@ export default function Home() {
                 const result = activeOption?.results[col.key] ?? null;
                 const usesCol = row.options.some((o) => o.results[col.key]);
                 if (!usesCol) {
-                  return <div key={col.key} className={styles.cell} />;
+                  return <div key={col.key} className="min-w-0 rounded" />;
                 }
                 // 個人ギミック（緑）は自分用マーカーとして点灯トグルできる
                 const isPersonalGreen = result?.tone === "green";
                 const markId = `${row.id}:${col.key}`;
                 const lit = marks[markId];
                 return (
-                  <div key={col.key} className={`${styles.cell} ${styles.cellActive}`}>
+                  <div
+                    key={col.key}
+                    className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]"
+                  >
                     {result ? (
                       result.alt ? (
                         // ほんと/ウソで対照になる2候補を枠線だけで並べて表示
-                        <div className={styles.altPair}>
+                        <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-px">
                           <div
-                            className={`${styles.linkedResult} ${styles.altChoice} ${outlineClass[result.tone]}`}
+                            className={`${linkedResultBase} flex-[1_1_auto] ${outlineClass[result.tone]}`}
                           >
                             {result.action}
                           </div>
-                          <div className={styles.altOr}>or</div>
+                          <div className="shrink-0 text-center text-[0.62rem] font-bold leading-none text-[#888]">
+                            or
+                          </div>
                           <div
-                            className={`${styles.linkedResult} ${styles.altChoice} ${outlineClass[result.alt.tone]}`}
+                            className={`${linkedResultBase} flex-[1_1_auto] ${outlineClass[result.alt.tone]}`}
                           >
                             {result.alt.action}
                           </div>
@@ -497,18 +536,24 @@ export default function Home() {
                       ) : isPersonalGreen ? (
                         <button
                           type="button"
-                          className={`${styles.linkedResult} ${styles.markBtn} ${lit ? styles.markLit : styles.markDim}`}
+                          className={`${linkedResultBase} w-full cursor-pointer border-2 border-[#3fbf6f] font-[inherit] ${
+                            lit
+                              ? "bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
+                              : "bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
+                          }`}
                           onClick={() => toggleMark(markId)}
                         >
                           {result.action}
                         </button>
                       ) : (
-                        <div className={`${styles.linkedResult} ${toneClass[result.tone]}`}>
+                        <div className={`${linkedResultBase} ${toneClass[result.tone]}`}>
                           {result.action}
                         </div>
                       )
                     ) : (
-                      <div className={styles.linkedWaiting}>−</div>
+                      <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.85rem] text-[#777]">
+                        −
+                      </div>
                     )}
                   </div>
                 );
