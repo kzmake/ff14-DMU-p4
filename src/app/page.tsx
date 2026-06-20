@@ -303,7 +303,7 @@ export default function Home() {
   }[];
   // グリッドの列幅（行見出し + 各列）。
   // 個人ギミック表示中は視線などを狭く、非表示時は残り列を等間隔にする。
-  const gridTemplate = `52px ${visibleColumns
+  const gridTemplate = `4rem ${visibleColumns
     .map((c) => (showPersonal && "narrow" in c && c.narrow ? "0.55fr" : "1fr"))
     .join(" ")}`;
 

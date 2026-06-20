@@ -11,6 +11,12 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  /* ビューポートに合わせて全体を拡大縮小（1画面に収める基準サイズ）。
+     1rem = 画面の小さい方の辺に連動。各サイズは rem 指定で追従する。 */
+  font-size: clamp(8px, calc(0.45vw + 0.9vh), 22px);
+}
+
 body {
   box-sizing: border-box;
   padding: 2px 6px;

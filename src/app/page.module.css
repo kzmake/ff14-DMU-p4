@@ -9,7 +9,7 @@
 }
 
 .title {
-  font-size: 13px;
+  font-size: 1rem;
   color: #ffcc00;
   font-weight: bold;
 }
@@ -26,7 +26,7 @@
   border: none;
   padding: 3px 8px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 0.85rem;
   font-weight: bold;
   cursor: pointer;
 }
@@ -42,7 +42,7 @@
 }
 
 .toggleSwitchLabel {
-  font-size: 11px;
+  font-size: 0.85rem;
   font-weight: bold;
   color: #aaa;
 }
@@ -58,7 +58,9 @@
   border-radius: 9px;
   background: #444;
   border: 1px solid #555;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 
 .toggleSwitch.toggleSwitchOn .toggleSwitchTrack {
@@ -74,7 +76,9 @@
   height: 14px;
   border-radius: 50%;
   background: #ccc;
-  transition: transform 0.15s, background 0.15s;
+  transition:
+    transform 0.15s,
+    background 0.15s;
 }
 
 .toggleSwitch.toggleSwitchOn .toggleSwitchThumb {
@@ -94,7 +98,7 @@
 /* 1行：左に行見出し + 9列（本体 + 8列） */
 .gridRow {
   display: grid;
-  grid-template-columns: 52px repeat(9, 1fr);
+  grid-template-columns: 4rem repeat(9, 1fr);
   gap: 3px;
   flex: 1;
   min-height: 0;
@@ -106,7 +110,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 10px;
+  font-size: 0.77rem;
   font-weight: bold;
   color: #0f0f0f;
   background: #ffcc00;
@@ -126,7 +130,7 @@
   justify-content: center;
   gap: 3px;
   text-align: center;
-  font-size: 10px;
+  font-size: 0.77rem;
   font-weight: 800;
   color: #fff;
   background: linear-gradient(135deg, #8a4fd0 0%, #5e2a99 100%);
@@ -147,7 +151,7 @@
   justify-content: center;
   gap: 4px;
   text-align: center;
-  font-size: 10px;
+  font-size: 0.77rem;
   font-weight: 800;
   color: #fff;
   background: linear-gradient(135deg, #2bb3b3 0%, #146e6e 100%);
@@ -163,7 +167,7 @@
 }
 
 .usageIcon {
-  font-size: 12px;
+  font-size: 0.92rem;
   line-height: 1;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
 }
@@ -194,7 +198,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 9px;
+  font-size: 0.69rem;
   font-weight: bold;
   color: #ffcc00;
   background: rgba(255, 204, 0, 0.08);
@@ -209,7 +213,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 10px;
+  font-size: 0.77rem;
   font-weight: bold;
   color: #fff;
   border-left: 2px solid #ffcc00;
@@ -248,7 +252,7 @@
   background: #222;
   color: #ccc;
   padding: 0;
-  font-size: 11px;
+  font-size: 0.85rem;
   font-weight: bold;
   border-radius: 4px;
   cursor: pointer;
@@ -360,7 +364,7 @@
 
 .altOr {
   flex: 0 0 auto;
-  font-size: 8px;
+  font-size: 0.62rem;
   font-weight: bold;
   color: #888;
   text-align: center;
@@ -391,7 +395,7 @@
 /* 処理するアクション（ボタンの下に小さく1行） */
 .action {
   flex: 0 0 auto;
-  font-size: 11px;
+  font-size: 0.85rem;
   font-weight: bold;
   color: #ffcc00;
   line-height: 1.2;
@@ -409,7 +413,7 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 10px;
+  font-size: 0.77rem;
   font-weight: bold;
   border-radius: 4px;
   line-height: 1.15;
@@ -426,6 +430,6 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 11px;
+  font-size: 0.85rem;
   color: #777;
 }
