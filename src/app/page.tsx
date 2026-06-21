@@ -60,7 +60,7 @@ const elementKind = (optionKey: string): "fire" | "tsunami" | null =>
 const ROWS: Row[] = [
   {
     id: "gc1",
-    name: "1️⃣GC1",
+    name: "GC1",
     cols: 1,
     options: [
       {
@@ -96,7 +96,7 @@ const ROWS: Row[] = [
   },
   {
     id: "fire1",
-    name: "2️⃣ほのおつなみ1",
+    name: "🔥💧1",
     cols: 2,
     options: [
       {
@@ -127,7 +127,7 @@ const ROWS: Row[] = [
   },
   {
     id: "gc2",
-    name: "3️⃣GC2",
+    name: "GC2",
     cols: 1,
     options: [
       {
@@ -162,7 +162,7 @@ const ROWS: Row[] = [
   },
   {
     id: "tsunami1",
-    name: "4️⃣ほのおつなみ2",
+    name: "🔥💧2",
     cols: 2,
     mirrorOf: "fire1", // 1回目で選んだ種別の逆だけ選べる
     options: [
@@ -194,7 +194,7 @@ const ROWS: Row[] = [
   },
   {
     id: "magic",
-    name: "5️⃣マジックチャージ",
+    name: "チャージ",
     cols: 2,
     options: [
       {
