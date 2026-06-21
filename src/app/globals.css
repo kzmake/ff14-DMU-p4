@@ -18,16 +18,16 @@ body {
 }
 
 html {
-  /* 文字サイズは「画面の縦（vh）」だけで決める。縦サイズを基準に大きく表示。
-     1rem ≒ 画面高さの 2.2%。--font-scale（大中小）で倍率調整。 */
-  --font-scale: 1;
-  font-size: clamp(10px, calc(4vh * var(--font-scale)), 72px);
+  /* 文字サイズは「画面の縦（vh）」基準。--font-scale に実効dvh値（大3.2/中3.0/
+     小2.8）が入るので、root font-size ＝ その dvh になる。既定=大(3.2)。 */
+  --font-scale: 3.2;
+  font-size: clamp(10px, calc(1vh * var(--font-scale)), 60px);
 }
 
 /* dvh 対応ブラウザでは実表示領域(縦)に連動させてフィット精度を上げる */
 @supports (height: 100dvh) {
   html {
-    font-size: clamp(10px, calc(4dvh * var(--font-scale)), 72px);
+    font-size: clamp(10px, calc(1dvh * var(--font-scale)), 60px);
   }
 }
 

@@ -271,12 +271,14 @@ const outlineClass: Record<Tone, string> = {
   green: "bg-transparent text-[#7fd9a0] border-[1.5px] border-[#3fbf6f]",
 };
 
-// フォントサイズ（大中小）。html の --font-scale 倍率にマッピング。
+// フォントサイズ（大中小）。html の --font-scale に「実効dvh値」を渡す。
+// 基準が 1dvh なので、この値がそのまま root font-size の dvh になる。
+// iPad mini で崩れない上限を実測した値（大=3.2 / 中=3.0 / 小=2.8）。
 type FontSize = "small" | "medium" | "large";
 const FONT_SCALE: Record<FontSize, number> = {
-  small: 0.8,
-  medium: 1,
-  large: 1.25,
+  small: 2.8,
+  medium: 3.0,
+  large: 3.2,
 };
 const FONT_OPTIONS: { key: FontSize; label: string }[] = [
   { key: "large", label: "大" },
