@@ -10,6 +10,10 @@ body {
   overflow: hidden; /* 縦・横スクロールを完全に禁止 */
   width: 100vw;
   height: 100vh;
+  /* iPad/モバイル Safari：アドレスバー込みの 100vh で溢れるのを防ぐため、
+     対応ブラウザでは実表示領域に追従する dvh/dvw を使う。 */
+  height: 100dvh;
+  width: 100dvw;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -22,10 +26,19 @@ html {
   font-size: clamp(8px, calc((0.45vw + 0.75vh) * var(--font-scale)), 24px);
 }
 
+/* dvh 対応ブラウザでは実表示領域に連動させてフィット精度を上げる */
+@supports (height: 100dvh) {
+  html {
+    font-size: clamp(8px, calc((0.45dvw + 0.75dvh) * var(--font-scale)), 24px);
+  }
+}
+
 body {
   box-sizing: border-box;
-  /* コンテンツ高さを約90%にして上寄せ（残り10%は下に余白） */
+  /* コンテンツ高さを約90%にして上寄せ（残り10%は下に余白）。
+     アドレスバーの伸縮に追従するよう dvh を優先。 */
   height: 90vh;
+  height: 90dvh;
   padding: env(safe-area-inset-top) 0 0 0;
   display: flex;
   flex-direction: column;
