@@ -35,11 +35,10 @@ html {
 
 body {
   box-sizing: border-box;
-  /* コンテンツ高さを約90%にして上寄せ（残り10%は下に余白）。
-     アドレスバーの伸縮に追従するよう dvh を優先。 */
-  height: 90vh;
-  height: 90dvh;
-  padding: env(safe-area-inset-top) 0 0 0;
+  /* dvh は実表示領域に追従するので 100% で溢れず画面いっぱいに収まる。 */
+  height: 100vh;
+  height: 100dvh;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
