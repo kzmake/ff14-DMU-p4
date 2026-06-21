@@ -350,19 +350,22 @@ export default function Home() {
 
   return (
     <>
-      {/* ヘッダー */}
-      <div className="flex shrink-0 items-center justify-between border-b-2 border-[#ffcc00] mb-1 pb-[3px]">
+      {/* ヘッダー：本文(4dvh)に引きずられないよう 2dvh 基準。子は em で追従 */}
+      <div
+        className="flex shrink-0 items-center justify-between border-b-2 border-[#ffcc00] mb-1 pb-[3px]"
+        style={{ fontSize: "min(2dvh, 16px)" }}
+      >
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            className="inline-flex h-[1.6rem] w-[1.6rem] cursor-pointer items-center justify-center rounded border border-[#555] bg-[#1c1c1c] text-[0.95rem] leading-none text-[#ffcc00] hover:border-[#ffcc00] hover:bg-[#2a2a2a]"
+            className="inline-flex h-[1.6em] w-[1.6em] cursor-pointer items-center justify-center rounded border border-[#555] bg-[#1c1c1c] text-[0.95em] leading-none text-[#ffcc00] hover:border-[#ffcc00] hover:bg-[#2a2a2a]"
             onClick={toggleFullscreen}
             aria-label={isFullscreen ? "フルスクリーン解除" : "フルスクリーン"}
             title={isFullscreen ? "フルスクリーン解除" : "フルスクリーン"}
           >
             {isFullscreen ? "🗗" : "⛶"}
           </button>
-          <div className="text-base font-bold text-[#ffcc00]">🤡 絶妖星乱舞 P4 真偽判定</div>
+          <div className="text-[1.2em] font-bold text-[#ffcc00]">🤡 絶妖星乱舞 P4 真偽判定</div>
         </div>
         <div className="flex items-center gap-1.5">
           {/* フォントサイズ切替（大中小） */}
@@ -372,7 +375,7 @@ export default function Home() {
                 key={opt.key}
                 type="button"
                 aria-pressed={fontSize === opt.key}
-                className={`cursor-pointer border-none px-2 py-[3px] text-[0.85rem] font-bold ${
+                className={`cursor-pointer border-none px-2 py-[3px] text-[0.85em] font-bold ${
                   fontSize === opt.key
                     ? "bg-[#ffcc00] text-[#0f0f0f]"
                     : "bg-[#1c1c1c] text-[#aaa] hover:bg-[#2a2a2a]"
@@ -391,7 +394,7 @@ export default function Home() {
             onClick={() => setShowPersonal((v) => !v)}
           >
             <span
-              className={`text-[0.85rem] font-bold ${showPersonal ? "text-[#ffcc00]" : "text-[#aaa]"}`}
+              className={`text-[0.85em] font-bold ${showPersonal ? "text-[#ffcc00]" : "text-[#aaa]"}`}
             >
               個人ギミック
             </span>
@@ -409,7 +412,7 @@ export default function Home() {
           </button>
           <button
             type="button"
-            className="cursor-pointer rounded border-none bg-[#ff3333] px-2 py-[3px] text-[0.85rem] font-bold text-white"
+            className="cursor-pointer rounded border-none bg-[#ff3333] px-2 py-[3px] text-[0.85em] font-bold text-white"
             onClick={resetAll}
           >
             ALLリセット
