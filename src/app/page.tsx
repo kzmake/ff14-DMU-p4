@@ -422,38 +422,44 @@ export default function Home() {
 
       {/* 表全体：利用可能な高さいっぱいに広げ、各行で等分する */}
       <div className="flex h-full min-h-0 flex-1 flex-col gap-[2px]">
-        {/* 用途見出し行：本体＝記憶、それ以外＝タイムライン */}
-        <div className="grid shrink-0 gap-[3px]" style={{ gridTemplateColumns: gridTemplate }}>
+        {/* 用途見出し行：本体＝記憶、それ以外＝タイムライン（小さめ＝2dvh基準） */}
+        <div
+          className="grid shrink-0 gap-[3px]"
+          style={{ gridTemplateColumns: gridTemplate, fontSize: "min(2dvh, 15px)" }}
+        >
           <div />
           <div
-            className="flex items-center justify-center gap-[3px] rounded-[5px] border border-[#b07fe6] bg-[linear-gradient(135deg,#8a4fd0_0%,#5e2a99_100%)] px-[2px] py-1 text-center text-[0.77rem] font-extrabold leading-[1.1] text-white [box-shadow:inset_0_1px_0_rgba(255,255,255,0.25),0_0_6px_rgba(138,79,208,0.5)] [text-shadow:0_1px_1px_rgba(0,0,0,0.4)]"
+            className="flex items-center justify-center gap-[3px] rounded-[5px] border border-[#b07fe6] bg-[linear-gradient(135deg,#8a4fd0_0%,#5e2a99_100%)] px-[2px] py-1 text-center text-[0.95em] font-extrabold leading-[1.1] text-white [box-shadow:inset_0_1px_0_rgba(255,255,255,0.25),0_0_6px_rgba(138,79,208,0.5)] [text-shadow:0_1px_1px_rgba(0,0,0,0.4)]"
             style={{ gridColumn: "span 1" }}
           >
-            <span className="text-[0.92rem] leading-none [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]">
+            <span className="text-[1.1em] leading-none [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]">
               🧠
             </span>
             <span>記憶</span>
           </div>
           <div
-            className="flex items-center justify-center gap-1 rounded-[5px] border border-[#4fd6d6] bg-[linear-gradient(135deg,#2bb3b3_0%,#146e6e_100%)] px-[2px] py-1 text-center text-[0.77rem] font-extrabold leading-[1.1] tracking-[1.5px] text-white [box-shadow:inset_0_1px_0_rgba(255,255,255,0.25),0_0_6px_rgba(43,179,179,0.5)] [text-shadow:0_1px_1px_rgba(0,0,0,0.4)]"
+            className="flex items-center justify-center gap-1 rounded-[5px] border border-[#4fd6d6] bg-[linear-gradient(135deg,#2bb3b3_0%,#146e6e_100%)] px-[2px] py-1 text-center text-[0.95em] font-extrabold leading-[1.1] tracking-[1.5px] text-white [box-shadow:inset_0_1px_0_rgba(255,255,255,0.25),0_0_6px_rgba(43,179,179,0.5)] [text-shadow:0_1px_1px_rgba(0,0,0,0.4)]"
             style={{ gridColumn: `span ${visibleColumns.length - 1}` }}
           >
-            <span className="text-[0.92rem] leading-none [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]">
+            <span className="text-[1.1em] leading-none [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]">
               ⏱
             </span>
             <span className="tracking-[inherit]">タイムライン</span>
           </div>
         </div>
 
-        {/* グループ見出し行 */}
-        <div className="grid shrink-0 gap-[3px]" style={{ gridTemplateColumns: gridTemplate }}>
+        {/* グループ見出し行（小さめ＝2dvh基準） */}
+        <div
+          className="grid shrink-0 gap-[3px]"
+          style={{ gridTemplateColumns: gridTemplate, fontSize: "min(2dvh, 15px)" }}
+        >
           <div />
           {visibleColumns.map((col) => (
             <div
               key={col.key}
               className={
                 col.group
-                  ? "flex items-center justify-center rounded-[3px] bg-[#ffcc00] px-px py-[2px] text-center text-[0.77rem] font-bold leading-[1.1] text-[#0f0f0f]"
+                  ? "flex items-center justify-center rounded-[3px] bg-[#ffcc00] px-px py-[2px] text-center text-[0.95em] font-bold leading-[1.1] text-[#0f0f0f]"
                   : "bg-transparent"
               }
             >
@@ -462,13 +468,16 @@ export default function Home() {
           ))}
         </div>
 
-        {/* 列名ヘッダー行 */}
-        <div className="grid shrink-0 gap-[3px]" style={{ gridTemplateColumns: gridTemplate }}>
+        {/* 列名ヘッダー行（小さめ＝2dvh基準） */}
+        <div
+          className="grid shrink-0 gap-[3px]"
+          style={{ gridTemplateColumns: gridTemplate, fontSize: "min(2dvh, 15px)" }}
+        >
           <div />
           {visibleColumns.map((col) => (
             <div
               key={col.key}
-              className="flex items-center justify-center rounded-[3px] bg-[rgba(255,204,0,0.08)] px-px py-[2px] text-center text-[0.69rem] font-bold leading-[1.1] text-[#ffcc00]"
+              className="flex items-center justify-center rounded-[3px] bg-[rgba(255,204,0,0.08)] px-px py-[2px] text-center text-[0.85em] font-bold leading-[1.1] text-[#ffcc00]"
             >
               {col.label}
             </div>
@@ -504,7 +513,10 @@ export default function Home() {
               className={`grid min-h-0 flex-1 gap-[3px] rounded ${zebra}`}
               style={{ gridTemplateColumns: gridTemplate }}
             >
-              <div className="flex items-center justify-center border-l-2 border-[#ffcc00] px-[2px] text-center text-[0.77rem] font-bold leading-[1.2] text-white">
+              <div
+                className="flex items-center justify-center border-l-2 border-[#ffcc00] px-[2px] text-center font-bold leading-[1.2] text-white"
+                style={{ fontSize: "min(2dvh, 15px)" }}
+              >
                 {row.name}
               </div>
 
