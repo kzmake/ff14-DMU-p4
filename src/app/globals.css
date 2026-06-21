@@ -24,8 +24,9 @@ html {
 
 body {
   box-sizing: border-box;
-  /* 余白なし（端の安全エリアぶんのみ）。画面を使い切る */
-  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
+  /* コンテンツ高さを約90%にして上寄せ（残り10%は下に余白） */
+  height: 90vh;
+  padding: env(safe-area-inset-top) 0 0 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
