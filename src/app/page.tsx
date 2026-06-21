@@ -286,15 +286,22 @@ const FONT_OPTIONS: { key: FontSize; label: string }[] = [
 ];
 
 // 結果セル/ボタン：セル全面を文字で使う土台（枠・配色は呼び出し側で付与）。
+// @container 化して、中の文字がこのセルの高さ(cqh)に追従できるようにする。
 const cellBase =
-  "flex flex-1 min-h-0 min-w-0 items-center justify-center overflow-hidden rounded font-bold";
+  "@container flex flex-1 min-h-0 min-w-0 items-center justify-center overflow-hidden rounded font-bold";
 
-// テキストの「縦（文字高さ）」を全セルで統一する。
-// 文字サイズを rem 固定にすることで、セル高さや文字数に関わらず文字の縦が
-// 完全に揃い、比率も自然なまま（歪まない）。横は1行・中央寄せ。
+// 文字高さをセルの高さに合わせつつ、横にはみ出さないようにする。
+// 高さ基準(cqh)と幅基準(cqw/文字数)の小さい方を採用 → 縦はセルに追従し、
+// 文字数が多い語は幅で抑えて1行で収める。@container 基準なので暴走しない。
 function FitText({ text }: { text: string }) {
+  const chars = Math.max([...text].length, 1);
+  // 1文字あたりに使える横幅 ≒ 100cqw / 文字数。余白ぶん 0.9 を掛ける。
+  const perChar = (90 / chars).toFixed(1);
   return (
-    <span className="block w-full overflow-hidden whitespace-nowrap text-center text-[1.5rem] leading-none">
+    <span
+      className="block w-full overflow-hidden whitespace-nowrap text-center leading-none"
+      style={{ fontSize: `clamp(0.6rem, min(70cqh, ${perChar}cqw), 4rem)` }}
+    >
       {text}
     </span>
   );
