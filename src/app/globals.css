@@ -7,24 +7,25 @@ body {
   background-color: #0f0f0f;
   color: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-  overflow-x: hidden; /* 横スクロールは禁止 */
-  overflow-y: auto; /* 縦は内容が大きければスクロール */
+  overflow: hidden; /* 縦・横スクロールを完全に禁止 */
   width: 100vw;
+  height: 100vh;
   -webkit-tap-highlight-color: transparent;
 }
 
 html {
-  /* ビューポート連動の基準サイズ × 大中小の倍率（既定=大）。
-     大きくすると行も rem で大きくなり、画面を超えたら縦スクロール。 */
+  /* ビューポートに合わせて全体を拡大縮小（1画面に収める基準サイズ）。
+     1rem = 画面の小さい方の辺に連動。各サイズは rem 指定で追従する。
+     iPad など縦長で溢れないよう vh 寄与を抑える。
+     --font-scale で 大中小 を切替（既定=大）。 */
   --font-scale: 1;
-  font-size: clamp(8px, calc((0.45vw + 0.75vh) * var(--font-scale)), 48px);
+  font-size: clamp(8px, calc((0.45vw + 0.75vh) * var(--font-scale)), 24px);
 }
 
 body {
   box-sizing: border-box;
   /* 余白なし（端の安全エリアぶんのみ）。画面を使い切る */
   padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom) 0;
-  min-height: 100vh; /* 最低でも画面いっぱい、中身が大きければ伸びる */
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
