@@ -21,13 +21,13 @@ html {
   /* 文字サイズは「画面の縦（vh）」だけで決める。縦サイズを基準に大きく表示。
      1rem ≒ 画面高さの 2.2%。--font-scale（大中小）で倍率調整。 */
   --font-scale: 1;
-  font-size: clamp(10px, calc(2.2vh * var(--font-scale)), 48px);
+  font-size: clamp(10px, calc(4vh * var(--font-scale)), 72px);
 }
 
 /* dvh 対応ブラウザでは実表示領域(縦)に連動させてフィット精度を上げる */
 @supports (height: 100dvh) {
   html {
-    font-size: clamp(10px, calc(2.2dvh * var(--font-scale)), 48px);
+    font-size: clamp(10px, calc(4dvh * var(--font-scale)), 72px);
   }
 }
 
