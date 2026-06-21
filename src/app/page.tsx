@@ -7,21 +7,21 @@ type Tone = "blue" | "red" | "thunder" | "ice" | "both" | "safe" | "green";
 // 横＝列（画像準拠）。先頭の本体列が操作、右側は表示専用。
 // personal: 個人ギミック（自分の早/遅デバフ依存）。トグルで非表示にできる。
 const COLUMNS = [
-  { key: "boss", label: "🤡 本体", group: "" },
+  { key: "boss", label: "🤡本体", group: "" },
   // 早加速グループ（個人ギミックは狭く）
-  { key: "e-accel", label: "加速度", group: "早", personal: true, narrow: true },
-  { key: "e-thunder", label: "雷", group: "早", personal: true, narrow: true },
-  { key: "e-water", label: "水", group: "早", personal: true, narrow: true },
-  { key: "e-look", label: "視線", group: "早", narrow: true },
+  { key: "e-accel", label: "💨加速", group: "早", personal: true, narrow: true },
+  { key: "e-thunder", label: "⚡雷", group: "早", personal: true, narrow: true },
+  { key: "e-water", label: "💧水", group: "早", personal: true, narrow: true },
+  { key: "e-look", label: "👁視線", group: "早", narrow: true },
   // 炎
-  { key: "fire", label: "ほのお", group: "" },
+  { key: "fire", label: "🔥ほのお", group: "" },
   // 遅加速グループ（個人ギミックは狭く）
-  { key: "l-accel", label: "加速度", group: "遅", personal: true, narrow: true },
-  { key: "l-thunder", label: "雷", group: "遅", personal: true, narrow: true },
-  { key: "l-water", label: "水", group: "遅", personal: true, narrow: true },
-  { key: "l-look", label: "視線", group: "遅", narrow: true },
+  { key: "l-accel", label: "💨加速", group: "遅", personal: true, narrow: true },
+  { key: "l-thunder", label: "⚡雷", group: "遅", personal: true, narrow: true },
+  { key: "l-water", label: "💧水", group: "遅", personal: true, narrow: true },
+  { key: "l-look", label: "👁視線", group: "遅", narrow: true },
   // つなみ
-  { key: "tsunami", label: "つなみ ＆ マジックアウト", group: "" },
+  { key: "tsunami", label: "🌊つなみ ＆ マジックアウト", group: "" },
 ] as const;
 
 type ColKey = (typeof COLUMNS)[number]["key"];
@@ -65,7 +65,7 @@ const ROWS: Row[] = [
     options: [
       {
         key: "honto",
-        label: "本当",
+        label: "真",
         tone: "blue",
         results: {
           "e-accel": { action: "止まる", tone: "green" },
@@ -80,7 +80,7 @@ const ROWS: Row[] = [
       },
       {
         key: "uso",
-        label: "嘘",
+        label: "偽",
         tone: "red",
         results: {
           "e-accel": { action: "動く", tone: "green" },
@@ -96,30 +96,30 @@ const ROWS: Row[] = [
   },
   {
     id: "fire1",
-    name: "🔥💧1",
+    name: "🔥🌊1",
     cols: 2,
     options: [
       {
         key: "fire-honto",
-        label: "ほのお本当",
+        label: "🔥真",
         tone: "blue",
         results: { fire: { action: "🔥タケノコ", tone: "blue" } },
       },
       {
         key: "fire-uso",
-        label: "ほのお嘘",
+        label: "🔥偽",
         tone: "red",
         results: { fire: { action: "🔥ドーナツ", tone: "red" } },
       },
       {
         key: "tsunami-honto",
-        label: "つなみ本当",
+        label: "🌊真",
         tone: "blue",
         results: { tsunami: { action: "🌊ドーナツ", tone: "blue" } },
       },
       {
         key: "tsunami-uso",
-        label: "つなみ嘘",
+        label: "🌊偽",
         tone: "red",
         results: { tsunami: { action: "🌊タケノコ", tone: "red" } },
       },
@@ -132,7 +132,7 @@ const ROWS: Row[] = [
     options: [
       {
         key: "honto",
-        label: "本当",
+        label: "真",
         tone: "blue",
         results: {
           "e-accel": { action: "止まる", tone: "green" },
@@ -146,7 +146,7 @@ const ROWS: Row[] = [
       },
       {
         key: "uso",
-        label: "嘘",
+        label: "偽",
         tone: "red",
         results: {
           "e-accel": { action: "動く", tone: "green" },
@@ -162,31 +162,31 @@ const ROWS: Row[] = [
   },
   {
     id: "tsunami1",
-    name: "🔥💧2",
+    name: "🔥🌊2",
     cols: 2,
     mirrorOf: "fire1", // 1回目で選んだ種別の逆だけ選べる
     options: [
       {
         key: "fire-honto",
-        label: "ほのお本当",
+        label: "🔥真",
         tone: "blue",
         results: { fire: { action: "🔥タケノコ", tone: "blue" } },
       },
       {
         key: "fire-uso",
-        label: "ほのお嘘",
+        label: "🔥偽",
         tone: "red",
         results: { fire: { action: "🔥ドーナツ", tone: "red" } },
       },
       {
         key: "tsunami-honto",
-        label: "つなみ本当",
+        label: "🌊真",
         tone: "blue",
         results: { tsunami: { action: "🌊ドーナツ", tone: "blue" } },
       },
       {
         key: "tsunami-uso",
-        label: "つなみ嘘",
+        label: "🌊偽",
         tone: "red",
         results: { tsunami: { action: "🌊タケノコ", tone: "red" } },
       },
@@ -606,8 +606,8 @@ export default function Home() {
                         </div>
                       )
                     ) : (
-                      <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.85rem] text-[#777]">
-                        −
+                      <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.7rem] text-[#3a3a3a]">
+                        ·
                       </div>
                     )}
                   </div>
