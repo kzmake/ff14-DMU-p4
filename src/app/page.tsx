@@ -273,11 +273,10 @@ const outlineClass: Record<Tone, string> = {
 
 // フォントサイズ（大中小）。html の --font-scale 倍率にマッピング。
 type FontSize = "small" | "medium" | "large";
-// ビューポート連動の基準サイズにかける倍率（小中大）。
 const FONT_SCALE: Record<FontSize, number> = {
-  small: 1,
-  medium: 1.3,
-  large: 1.6,
+  small: 0.8,
+  medium: 1,
+  large: 1.25,
 };
 const FONT_OPTIONS: { key: FontSize; label: string }[] = [
   { key: "large", label: "大" },
@@ -285,27 +284,9 @@ const FONT_OPTIONS: { key: FontSize; label: string }[] = [
   { key: "small", label: "小" },
 ];
 
-// 結果セル/ボタン：セル全面を文字で使う土台（枠・配色は呼び出し側で付与）。
-// @container 化して、中の文字がこのセルの高さ(cqh)に追従できるようにする。
-const cellBase =
-  "@container flex flex-1 min-h-0 min-w-0 items-center justify-center overflow-hidden rounded font-bold";
-
-// 文字高さをセルの高さに合わせつつ、横にはみ出さないようにする。
-// 高さ基準(cqh)と幅基準(cqw/文字数)の小さい方を採用 → 縦はセルに追従し、
-// 文字数が多い語は幅で抑えて1行で収める。@container 基準なので暴走しない。
-function FitText({ text }: { text: string }) {
-  const chars = Math.max([...text].length, 1);
-  // 1文字あたりに使える横幅 ≒ 100cqw / 文字数。余白ぶん 0.9 を掛ける。
-  const perChar = (90 / chars).toFixed(1);
-  return (
-    <span
-      className="block w-full overflow-hidden whitespace-nowrap text-center leading-none"
-      style={{ fontSize: `clamp(0.6rem, min(70cqh, ${perChar}cqw), 4rem)` }}
-    >
-      {text}
-    </span>
-  );
-}
+// 結果セル共通レイアウト（中央寄せ・枠線等）
+const linkedResultBase =
+  "flex flex-1 min-h-0 items-center justify-center text-center text-[0.77rem] font-bold rounded leading-[1.15] p-px whitespace-pre-line break-all";
 
 export default function Home() {
   // rowId -> 選択した option.key
@@ -436,25 +417,25 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 表全体：最低でも画面いっぱい、フォントが大きければ伸びてスクロール */}
-      <div className="flex min-h-0 flex-1 flex-col gap-[2px]">
+      {/* 表全体：利用可能な高さいっぱいに広げ、各行で等分する */}
+      <div className="flex h-full min-h-0 flex-1 flex-col gap-[2px]">
         {/* 用途見出し行：本体＝記憶、それ以外＝タイムライン */}
         <div className="grid shrink-0 gap-[3px]" style={{ gridTemplateColumns: gridTemplate }}>
           <div />
           <div
-            className="flex items-center justify-center gap-[3px] rounded-[5px] border border-[#b07fe6] bg-[linear-gradient(135deg,#8a4fd0_0%,#5e2a99_100%)] px-[2px] py-1 text-center text-[1.05rem] font-extrabold leading-[1.1] text-white [box-shadow:inset_0_1px_0_rgba(255,255,255,0.25),0_0_6px_rgba(138,79,208,0.5)] [text-shadow:0_1px_1px_rgba(0,0,0,0.4)]"
+            className="flex items-center justify-center gap-[3px] rounded-[5px] border border-[#b07fe6] bg-[linear-gradient(135deg,#8a4fd0_0%,#5e2a99_100%)] px-[2px] py-1 text-center text-[0.77rem] font-extrabold leading-[1.1] text-white [box-shadow:inset_0_1px_0_rgba(255,255,255,0.25),0_0_6px_rgba(138,79,208,0.5)] [text-shadow:0_1px_1px_rgba(0,0,0,0.4)]"
             style={{ gridColumn: "span 1" }}
           >
-            <span className="text-[1.2rem] leading-none [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]">
+            <span className="text-[0.92rem] leading-none [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]">
               🧠
             </span>
             <span>記憶</span>
           </div>
           <div
-            className="flex items-center justify-center gap-1 rounded-[5px] border border-[#4fd6d6] bg-[linear-gradient(135deg,#2bb3b3_0%,#146e6e_100%)] px-[2px] py-1 text-center text-[1.05rem] font-extrabold leading-[1.1] tracking-[1.5px] text-white [box-shadow:inset_0_1px_0_rgba(255,255,255,0.25),0_0_6px_rgba(43,179,179,0.5)] [text-shadow:0_1px_1px_rgba(0,0,0,0.4)]"
+            className="flex items-center justify-center gap-1 rounded-[5px] border border-[#4fd6d6] bg-[linear-gradient(135deg,#2bb3b3_0%,#146e6e_100%)] px-[2px] py-1 text-center text-[0.77rem] font-extrabold leading-[1.1] tracking-[1.5px] text-white [box-shadow:inset_0_1px_0_rgba(255,255,255,0.25),0_0_6px_rgba(43,179,179,0.5)] [text-shadow:0_1px_1px_rgba(0,0,0,0.4)]"
             style={{ gridColumn: `span ${visibleColumns.length - 1}` }}
           >
-            <span className="text-[1.2rem] leading-none [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]">
+            <span className="text-[0.92rem] leading-none [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]">
               ⏱
             </span>
             <span className="tracking-[inherit]">タイムライン</span>
@@ -469,7 +450,7 @@ export default function Home() {
               key={col.key}
               className={
                 col.group
-                  ? "flex items-center justify-center rounded-[3px] bg-[#ffcc00] px-px py-[2px] text-center text-[1.05rem] font-bold leading-[1.1] text-[#0f0f0f]"
+                  ? "flex items-center justify-center rounded-[3px] bg-[#ffcc00] px-px py-[2px] text-center text-[0.77rem] font-bold leading-[1.1] text-[#0f0f0f]"
                   : "bg-transparent"
               }
             >
@@ -484,7 +465,7 @@ export default function Home() {
           {visibleColumns.map((col) => (
             <div
               key={col.key}
-              className="flex items-center justify-center rounded-[3px] bg-[rgba(255,204,0,0.08)] px-px py-[2px] text-center text-[1rem] font-bold leading-[1.1] text-[#ffcc00]"
+              className="flex items-center justify-center rounded-[3px] bg-[rgba(255,204,0,0.08)] px-px py-[2px] text-center text-[0.69rem] font-bold leading-[1.1] text-[#ffcc00]"
             >
               {col.label}
             </div>
@@ -517,22 +498,22 @@ export default function Home() {
           return (
             <div
               key={row.id}
-              className={`grid min-h-[2.4rem] flex-1 gap-px rounded ${zebra}`}
+              className={`grid min-h-0 flex-1 gap-[3px] rounded ${zebra}`}
               style={{ gridTemplateColumns: gridTemplate }}
             >
-              <div className="flex items-center justify-center border-l-2 border-[#ffcc00] px-[2px] text-center text-[1.15rem] font-bold leading-[1.2] text-white">
+              <div className="flex items-center justify-center border-l-2 border-[#ffcc00] px-[2px] text-center text-[0.77rem] font-bold leading-[1.2] text-white">
                 {row.name}
               </div>
 
               {/* 本体列：操作ボタン */}
-              <div className="flex min-w-0 flex-col gap-px rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-px">
+              <div className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]">
                 {mirrorWaiting ? (
-                  <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[1.2rem] text-[#777]">
+                  <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.85rem] text-[#777]">
                     ↑1回目を選択
                   </div>
                 ) : (
                   <div
-                    className="grid min-h-0 flex-1 auto-rows-fr gap-px"
+                    className="grid min-h-0 flex-1 auto-rows-fr gap-[3px]"
                     style={{
                       gridTemplateColumns: `repeat(${displayOptions.length === 4 ? 2 : displayOptions.length}, 1fr)`,
                     }}
@@ -543,12 +524,12 @@ export default function Home() {
                         <button
                           key={opt.key}
                           type="button"
-                          className={`${cellBase} h-full w-full cursor-pointer border ${
+                          className={`h-full w-full min-h-0 min-w-0 cursor-pointer rounded border p-0 text-[0.85rem] font-bold ${
                             isActive ? toneClass[opt.tone] : "border-[#444] bg-[#222] text-[#ccc]"
                           }`}
                           onClick={() => setSelect(row.id, opt.key)}
                         >
-                          <FitText text={opt.label} />
+                          {opt.label}
                         </button>
                       );
                     })}
@@ -570,38 +551,45 @@ export default function Home() {
                 return (
                   <div
                     key={col.key}
-                    className="flex min-w-0 flex-col gap-px rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-px"
+                    className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]"
                   >
                     {result ? (
                       result.alt ? (
                         // ほんと/ウソで対照になる2候補を枠線だけで並べて表示
-                        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-px">
-                          <div className={`${cellBase} ${outlineClass[result.tone]}`}>
-                            <FitText text={result.action} />
+                        <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-px">
+                          <div
+                            className={`${linkedResultBase} flex-[1_1_auto] ${outlineClass[result.tone]}`}
+                          >
+                            {result.action}
                           </div>
-                          <div className={`${cellBase} ${outlineClass[result.alt.tone]}`}>
-                            <FitText text={result.alt.action} />
+                          <div className="shrink-0 text-center text-[0.62rem] font-bold leading-none text-[#888]">
+                            or
+                          </div>
+                          <div
+                            className={`${linkedResultBase} flex-[1_1_auto] ${outlineClass[result.alt.tone]}`}
+                          >
+                            {result.alt.action}
                           </div>
                         </div>
                       ) : isPersonalGreen ? (
                         <button
                           type="button"
-                          className={`${cellBase} w-full cursor-pointer border-2 border-[#3fbf6f] ${
+                          className={`${linkedResultBase} w-full cursor-pointer border-2 border-[#3fbf6f] font-[inherit] ${
                             lit
                               ? "bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
                               : "bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
                           }`}
                           onClick={() => toggleMark(markId)}
                         >
-                          <FitText text={result.action} />
+                          {result.action}
                         </button>
                       ) : (
-                        <div className={`${cellBase} border ${toneClass[result.tone]}`}>
-                          <FitText text={result.action} />
+                        <div className={`${linkedResultBase} ${toneClass[result.tone]}`}>
+                          {result.action}
                         </div>
                       )
                     ) : (
-                      <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[1.2rem] text-[#777]">
+                      <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.85rem] text-[#777]">
                         −
                       </div>
                     )}
