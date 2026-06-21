@@ -16,7 +16,7 @@ body {
 html {
   /* ビューポート連動の基準サイズ × 大中小の倍率（既定=大）。
      大きくすると行も rem で大きくなり、画面を超えたら縦スクロール。 */
-  --font-scale: 1;
+  --font-scale: 1.6;
   font-size: clamp(8px, calc((0.45vw + 0.75vh) * var(--font-scale)), 48px);
 }
 

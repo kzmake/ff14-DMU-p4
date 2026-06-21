@@ -286,36 +286,17 @@ const FONT_OPTIONS: { key: FontSize; label: string }[] = [
 ];
 
 // 結果セル/ボタン：セル全面を文字で使う土台（枠・配色は呼び出し側で付与）。
-const cellBase = "relative flex flex-1 min-h-0 min-w-0 overflow-hidden rounded font-bold";
+const cellBase =
+  "flex flex-1 min-h-0 min-w-0 items-center justify-center overflow-hidden rounded font-bold";
 
-// テキストをセルの幅・高さ両方いっぱいに最大化するSVG。
-// viewBox を文字の自然比（横長）にし、SVG自身は w/h 100%。preserveAspectRatio で
-// セルの縦横どちらか小さい方に合わせて等倍最大化（歪みなし）。
+// テキストの「縦（文字高さ）」を全セルで統一する。
+// 文字サイズを rem 固定にすることで、セル高さや文字数に関わらず文字の縦が
+// 完全に揃い、比率も自然なまま（歪まない）。横は1行・中央寄せ。
 function FitText({ text }: { text: string }) {
-  const chars = Math.max([...text].length, 1);
-  // 1文字 ≒ 高さ10 × 幅10 とみなす。viewBox 幅=文字数×10、高さ=10。
-  const vbW = chars * 10;
   return (
-    <svg
-      className="absolute inset-0 h-full w-full p-[3%]"
-      viewBox={`0 0 ${vbW} 10`}
-      preserveAspectRatio="xMidYMid meet"
-      aria-label={text}
-    >
-      <title>{text}</title>
-      <text
-        x={vbW / 2}
-        y="5"
-        textLength={vbW}
-        lengthAdjust="spacingAndGlyphs"
-        dominantBaseline="central"
-        textAnchor="middle"
-        fill="currentColor"
-        fontSize="10"
-      >
-        {text}
-      </text>
-    </svg>
+    <span className="block w-full overflow-hidden whitespace-nowrap text-center text-[1.5rem] leading-none">
+      {text}
+    </span>
   );
 }
 
@@ -329,7 +310,7 @@ export default function Home() {
   // フルスクリーン状態
   const [isFullscreen, setIsFullscreen] = useState(false);
   // フォントサイズ（大中小）。既定は大。
-  const [fontSize, setFontSize] = useState<FontSize>("small");
+  const [fontSize, setFontSize] = useState<FontSize>("large");
 
   // 選択したフォントサイズを html の --font-scale に反映
   useEffect(() => {
