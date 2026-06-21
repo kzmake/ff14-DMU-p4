@@ -18,18 +18,16 @@ body {
 }
 
 html {
-  /* ビューポートに合わせて全体を拡大縮小（1画面に収める基準サイズ）。
-     1rem = 画面の小さい方の辺に連動。各サイズは rem 指定で追従する。
-     iPad など縦長で溢れないよう vh 寄与を抑える。
-     --font-scale で 大中小 を切替（既定=大）。 */
+  /* 文字サイズは「画面の縦（vh）」だけで決める。縦サイズを基準に大きく表示。
+     1rem ≒ 画面高さの 2.2%。--font-scale（大中小）で倍率調整。 */
   --font-scale: 1;
-  font-size: clamp(8px, calc((0.45vw + 0.75vh) * var(--font-scale)), 24px);
+  font-size: clamp(10px, calc(2.2vh * var(--font-scale)), 48px);
 }
 
-/* dvh 対応ブラウザでは実表示領域に連動させてフィット精度を上げる */
+/* dvh 対応ブラウザでは実表示領域(縦)に連動させてフィット精度を上げる */
 @supports (height: 100dvh) {
   html {
-    font-size: clamp(8px, calc((0.45dvw + 0.75dvh) * var(--font-scale)), 24px);
+    font-size: clamp(10px, calc(2.2dvh * var(--font-scale)), 48px);
   }
 }
 
