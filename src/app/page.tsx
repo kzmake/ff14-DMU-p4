@@ -14,14 +14,14 @@ const COLUMNS = [
   { key: "e-water", label: "💧水", group: "早", personal: true, narrow: true },
   { key: "e-look", label: "👁視線", group: "早", narrow: true },
   // 炎
-  { key: "fire", label: "🔥ほのお", group: "" },
+  { key: "fire", label: "🔥", group: "" },
   // 遅加速グループ（個人ギミックは狭く）
   { key: "l-accel", label: "💨加速", group: "遅", personal: true, narrow: true },
   { key: "l-thunder", label: "⚡雷", group: "遅", personal: true, narrow: true },
   { key: "l-water", label: "💧水", group: "遅", personal: true, narrow: true },
   { key: "l-look", label: "👁視線", group: "遅", narrow: true },
   // つなみ
-  { key: "tsunami", label: "🌊つなみ ＆ マジックアウト", group: "" },
+  { key: "tsunami", label: "🌊", group: "" },
 ] as const;
 
 type ColKey = (typeof COLUMNS)[number]["key"];
@@ -65,7 +65,7 @@ const ROWS: Row[] = [
     options: [
       {
         key: "honto",
-        label: "真",
+        label: "ホント",
         tone: "blue",
         results: {
           "e-accel": { action: "止まる", tone: "green" },
@@ -80,7 +80,7 @@ const ROWS: Row[] = [
       },
       {
         key: "uso",
-        label: "偽",
+        label: "ウソ",
         tone: "red",
         results: {
           "e-accel": { action: "動く", tone: "green" },
@@ -101,25 +101,25 @@ const ROWS: Row[] = [
     options: [
       {
         key: "fire-honto",
-        label: "🔥真",
+        label: "🔥ホント",
         tone: "blue",
         results: { fire: { action: "🔥タケノコ", tone: "blue" } },
       },
       {
         key: "fire-uso",
-        label: "🔥偽",
+        label: "🔥ウソ",
         tone: "red",
         results: { fire: { action: "🔥ドーナツ", tone: "red" } },
       },
       {
         key: "tsunami-honto",
-        label: "🌊真",
+        label: "🌊ホント",
         tone: "blue",
         results: { tsunami: { action: "🌊ドーナツ", tone: "blue" } },
       },
       {
         key: "tsunami-uso",
-        label: "🌊偽",
+        label: "🌊ウソ",
         tone: "red",
         results: { tsunami: { action: "🌊タケノコ", tone: "red" } },
       },
@@ -132,7 +132,7 @@ const ROWS: Row[] = [
     options: [
       {
         key: "honto",
-        label: "真",
+        label: "ホント",
         tone: "blue",
         results: {
           "e-accel": { action: "止まる", tone: "green" },
@@ -146,7 +146,7 @@ const ROWS: Row[] = [
       },
       {
         key: "uso",
-        label: "偽",
+        label: "ウソ",
         tone: "red",
         results: {
           "e-accel": { action: "動く", tone: "green" },
@@ -168,25 +168,25 @@ const ROWS: Row[] = [
     options: [
       {
         key: "fire-honto",
-        label: "🔥真",
+        label: "🔥ホント",
         tone: "blue",
         results: { fire: { action: "🔥タケノコ", tone: "blue" } },
       },
       {
         key: "fire-uso",
-        label: "🔥偽",
+        label: "🔥ウソ",
         tone: "red",
         results: { fire: { action: "🔥ドーナツ", tone: "red" } },
       },
       {
         key: "tsunami-honto",
-        label: "🌊真",
+        label: "🌊ホント",
         tone: "blue",
         results: { tsunami: { action: "🌊ドーナツ", tone: "blue" } },
       },
       {
         key: "tsunami-uso",
-        label: "🌊偽",
+        label: "🌊ウソ",
         tone: "red",
         results: { tsunami: { action: "🌊タケノコ", tone: "red" } },
       },
