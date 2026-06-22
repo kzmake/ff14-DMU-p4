@@ -111,13 +111,13 @@ const ROWS: Row[] = [
         key: "fire-uso",
         label: "🔥ウソ",
         tone: "red",
-        results: { fire: { action: "🔥集合", tone: "red" } },
+        results: { fire: { action: "🔥集合", tone: "red", outline: true } },
       },
       {
         key: "tsunami-honto",
         label: "🌊ホント",
         tone: "blue",
-        results: { tsunami: { action: "🌊集合", tone: "blue" } },
+        results: { tsunami: { action: "🌊集合", tone: "blue", outline: true } },
       },
       {
         key: "tsunami-uso",
@@ -178,13 +178,13 @@ const ROWS: Row[] = [
         key: "fire-uso",
         label: "🔥ウソ",
         tone: "red",
-        results: { fire: { action: "🔥集合", tone: "red" } },
+        results: { fire: { action: "🔥集合", tone: "red", outline: true } },
       },
       {
         key: "tsunami-honto",
         label: "🌊ホント",
         tone: "blue",
-        results: { tsunami: { action: "🌊集合", tone: "blue" } },
+        results: { tsunami: { action: "🌊集合", tone: "blue", outline: true } },
       },
       {
         key: "tsunami-uso",
