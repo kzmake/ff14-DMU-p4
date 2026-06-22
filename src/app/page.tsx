@@ -291,8 +291,8 @@ const linkedResultBase =
 export default function Home() {
   // rowId -> 選択した option.key
   const [selections, setSelections] = useState<Record<string, string | null>>({});
-  // 個人ギミック（加速度・雷水）の表示トグル
-  const [showPersonal, setShowPersonal] = useState(false);
+  // 個人ギミック（加速度・雷水）の表示トグル。既定でオン。
+  const [showPersonal, setShowPersonal] = useState(true);
   // 個人ギミックの「自分用マーカー」点灯（"rowId:colKey" -> bool）
   const [marks, setMarks] = useState<Record<string, boolean>>({});
   // フルスクリーン状態
@@ -320,7 +320,19 @@ export default function Home() {
     }
   };
 
-  const toggleMark = (id: string) => setMarks((prev) => ({ ...prev, [id]: !prev[id] }));
+  // 同じ行（rowId 接頭辞）では緑マーカーは1つだけ点灯。別を押すと切り替わる。
+  const toggleMark = (rowId: string, id: string) =>
+    setMarks((prev) => {
+      const next: Record<string, boolean> = { ...prev };
+      const wasLit = prev[id];
+      // まず同じ行の点灯を全消し
+      for (const k of Object.keys(next)) {
+        if (k.startsWith(`${rowId}:`)) next[k] = false;
+      }
+      // 押したものが消灯中だったら点灯（点灯中なら全消しのまま=トグルOFF）
+      if (!wasLit) next[id] = true;
+      return next;
+    });
 
   const setSelect = (rowId: string, optionKey: string) => {
     setSelections((prev) => ({
@@ -584,7 +596,7 @@ export default function Home() {
                                     ? "bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
                                     : "bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
                                 }`}
-                                onClick={() => toggleMark(subId)}
+                                onClick={() => toggleMark(row.id, subId)}
                               >
                                 {s.action}
                               </button>
@@ -616,7 +628,7 @@ export default function Home() {
                               ? "bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
                               : "bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
                           }`}
-                          onClick={() => toggleMark(markId)}
+                          onClick={() => toggleMark(row.id, markId)}
                         >
                           {result.action}
                         </button>
