@@ -5,21 +5,10 @@ import { useEffect, useState } from "react";
 type Tone = "blue" | "red" | "thunder" | "ice" | "both" | "safe" | "green";
 
 // 横＝列（画像準拠）。先頭の本体列が操作、右側は表示専用。
-// personal: 個人ギミック（自分の早/遅デバフ依存）。トグルで非表示にできる。
 const COLUMNS = [
   { key: "boss", label: "🤡本体", group: "" },
-  // 早加速グループ（個人ギミックは狭く）
-  { key: "e-accel", label: "💨加速", group: "早", personal: true, narrow: true },
-  { key: "e-thunder", label: "⚡雷", group: "早", personal: true, narrow: true },
-  { key: "e-water", label: "💧水", group: "早", personal: true, narrow: true },
-  { key: "e-look", label: "👁視線", group: "早", narrow: true },
   // 炎
   { key: "fire", label: "🔥", group: "" },
-  // 遅加速グループ（個人ギミックは狭く）
-  { key: "l-accel", label: "💨加速", group: "遅", personal: true, narrow: true },
-  { key: "l-thunder", label: "⚡雷", group: "遅", personal: true, narrow: true },
-  { key: "l-water", label: "💧水", group: "遅", personal: true, narrow: true },
-  { key: "l-look", label: "👁視線", group: "遅", narrow: true },
   // つなみ
   { key: "tsunami", label: "🌊", group: "" },
 ] as const;
@@ -53,6 +42,8 @@ type Row = {
   options: Option[];
   // ほのお/つなみ用：指定した行と逆の種別だけを選べるようにする
   mirrorOf?: string;
+  // 雷水用：指定行(GC1)のホント/ウソに応じて「雷散開/水散開」を緑表示する
+  scatterFrom?: string;
 };
 
 // option.key から種別（fire / tsunami）を取り出す
@@ -65,35 +56,18 @@ const ROWS: Row[] = [
     name: "GC1",
     cols: 1,
     options: [
-      {
-        key: "honto",
-        label: "ホント",
-        tone: "blue",
-        results: {
-          "e-accel": { action: "止まる", tone: "green" },
-          "e-thunder": { action: "散開", tone: "green" },
-          "e-water": { action: "頭割り", tone: "green" },
-          "e-look": { action: "見ない", tone: "blue" },
-          // この時点で早/遅が分かるので遅の個人ギミックも表示
-          "l-accel": { action: "止まる", tone: "green" },
-          "l-thunder": { action: "散開", tone: "green" },
-          "l-water": { action: "頭割り", tone: "green" },
-        },
-      },
-      {
-        key: "uso",
-        label: "ウソ",
-        tone: "red",
-        results: {
-          "e-accel": { action: "動く", tone: "green" },
-          "e-thunder": { action: "頭割り", tone: "green" },
-          "e-water": { action: "散開", tone: "green" },
-          "e-look": { action: "見る", tone: "red", outline: true },
-          "l-accel": { action: "動く", tone: "green" },
-          "l-thunder": { action: "頭割り", tone: "green" },
-          "l-water": { action: "散開", tone: "green" },
-        },
-      },
+      { key: "honto", label: "ホント", tone: "blue", results: {} },
+      { key: "uso", label: "ウソ", tone: "red", results: {} },
+    ],
+  },
+  {
+    id: "raisui",
+    name: "雷水",
+    cols: 2,
+    scatterFrom: "gc1", // GC1ホント→雷散開 / ウソ→水散開 を緑表示
+    options: [
+      { key: "haya", label: "早", tone: "blue", results: {} },
+      { key: "oso", label: "遅", tone: "blue", results: {} },
     ],
   },
   {
@@ -132,34 +106,8 @@ const ROWS: Row[] = [
     name: "GC2",
     cols: 1,
     options: [
-      {
-        key: "honto",
-        label: "ホント",
-        tone: "blue",
-        results: {
-          "e-accel": { action: "止まる", tone: "green" },
-          "e-thunder": { action: "散開", tone: "green" },
-          "e-water": { action: "頭割り", tone: "green" },
-          "l-accel": { action: "止まる", tone: "green" },
-          "l-thunder": { action: "散開", tone: "green" },
-          "l-water": { action: "頭割り", tone: "green" },
-          "l-look": { action: "見ない", tone: "blue" },
-        },
-      },
-      {
-        key: "uso",
-        label: "ウソ",
-        tone: "red",
-        results: {
-          "e-accel": { action: "動く", tone: "green" },
-          "e-thunder": { action: "頭割り", tone: "green" },
-          "e-water": { action: "散開", tone: "green" },
-          "l-accel": { action: "動く", tone: "green" },
-          "l-thunder": { action: "頭割り", tone: "green" },
-          "l-water": { action: "散開", tone: "green" },
-          "l-look": { action: "見る", tone: "red", outline: true },
-        },
-      },
+      { key: "honto", label: "ホント", tone: "blue", results: {} },
+      { key: "uso", label: "ウソ", tone: "red", results: {} },
     ],
   },
   {
@@ -278,10 +226,6 @@ const linkedResultBase =
 export default function Home() {
   // rowId -> 選択した option.key
   const [selections, setSelections] = useState<Record<string, string | null>>({});
-  // 個人ギミック（加速度・雷水）の表示トグル
-  const [showPersonal, setShowPersonal] = useState(false);
-  // 個人ギミックの「自分用マーカー」点灯（"rowId:colKey" -> bool）
-  const [marks, setMarks] = useState<Record<string, boolean>>({});
   // フルスクリーン状態
   const [isFullscreen, setIsFullscreen] = useState(false);
   // フォントサイズ（大中小）。既定は大。
@@ -307,8 +251,6 @@ export default function Home() {
     }
   };
 
-  const toggleMark = (id: string) => setMarks((prev) => ({ ...prev, [id]: !prev[id] }));
-
   const setSelect = (rowId: string, optionKey: string) => {
     setSelections((prev) => ({
       ...prev,
@@ -319,21 +261,16 @@ export default function Home() {
 
   const resetAll = () => {
     setSelections({});
-    setMarks({});
   };
 
-  // トグルOFFのとき個人ギミック列を隠す
-  const visibleColumns = COLUMNS.filter((c) => showPersonal || !("personal" in c && c.personal));
+  const visibleColumns = COLUMNS;
   const resultCols = visibleColumns.filter((c) => c.key !== "boss") as readonly {
     key: ResultColKey;
     label: string;
     group: string;
   }[];
   // グリッドの列幅（行見出し + 各列）。
-  // 個人ギミック表示中は視線などを狭く、非表示時は残り列を等間隔にする。
-  const gridTemplate = `2.8rem ${visibleColumns
-    .map((c) => (showPersonal && "narrow" in c && c.narrow ? "0.55fr" : "1fr"))
-    .join(" ")}`;
+  const gridTemplate = `2.8rem ${visibleColumns.map(() => "1fr").join(" ")}`;
 
   return (
     <>
@@ -375,30 +312,6 @@ export default function Home() {
           </div>
           <button
             type="button"
-            role="switch"
-            aria-checked={showPersonal}
-            className="group inline-flex cursor-pointer items-center gap-1.5 border-none bg-transparent p-0"
-            onClick={() => setShowPersonal((v) => !v)}
-          >
-            <span
-              className={`text-[0.85em] font-bold ${showPersonal ? "text-[#ffcc00]" : "text-[#aaa]"}`}
-            >
-              個人ギミック
-            </span>
-            <span
-              className={`relative h-[18px] w-[34px] rounded-[9px] border transition-[background,border-color] duration-150 ${
-                showPersonal ? "border-[#e6b800] bg-[#ffcc00]" : "border-[#555] bg-[#444]"
-              }`}
-            >
-              <span
-                className={`absolute top-px left-px h-[14px] w-[14px] rounded-full transition-[transform,background] duration-150 ${
-                  showPersonal ? "translate-x-4 bg-[#0f0f0f]" : "bg-[#ccc]"
-                }`}
-              />
-            </span>
-          </button>
-          <button
-            type="button"
             className="cursor-pointer rounded border-none bg-[#ff3333] px-2 py-[3px] text-[0.85em] font-bold text-white"
             onClick={resetAll}
           >
@@ -433,26 +346,6 @@ export default function Home() {
             </span>
             <span className="tracking-[inherit]">タイムライン</span>
           </div>
-        </div>
-
-        {/* グループ見出し行（小さめ＝2dvh基準） */}
-        <div
-          className="grid shrink-0 gap-[3px]"
-          style={{ gridTemplateColumns: gridTemplate, fontSize: "min(2dvh, 15px)" }}
-        >
-          <div />
-          {visibleColumns.map((col) => (
-            <div
-              key={col.key}
-              className={
-                col.group
-                  ? "flex items-center justify-center rounded-[3px] bg-[#ffcc00] px-px py-[2px] text-center text-[0.95em] font-bold leading-[1.1] text-[#0f0f0f]"
-                  : "bg-transparent"
-              }
-            >
-              {col.group}
-            </div>
-          ))}
         </div>
 
         {/* 列名ヘッダー行（小さめ＝2dvh基準） */}
@@ -493,6 +386,15 @@ export default function Home() {
 
           // 表示中のオプションに含まれる選択だけ有効（連動で種別が変わったら無効化）
           const activeOption = displayOptions.find((o) => o.key === activeKey) ?? null;
+
+          // 雷水：GC1のホント/ウソに応じて散開対象を緑表示（ホント→雷散開 / ウソ→水散開）
+          // 早/遅ボタンが押され、かつGC1が選択済みのときだけ表示する。
+          let scatterText: string | null = null;
+          if (row.scatterFrom && activeKey) {
+            const gcKey = selections[row.scatterFrom] ?? null;
+            if (gcKey === "honto") scatterText = "雷散開";
+            else if (gcKey === "uso") scatterText = "水散開";
+          }
 
           return (
             <div
@@ -539,17 +441,34 @@ export default function Home() {
                 )}
               </div>
 
+              {/* 雷水行：散開対象だけを緑で表示（結果列をまたいで1セル） */}
+              {row.scatterFrom ? (
+                <div
+                  className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]"
+                  style={{ gridColumn: `span ${resultCols.length}` }}
+                >
+                  {scatterText ? (
+                    <div
+                      className={`${linkedResultBase} ${toneClass.green}`}
+                    >
+                      {scatterText}
+                    </div>
+                  ) : (
+                    <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.7rem] text-[#777]">
+                      {activeKey ? "GC1を選択" : "早 / 遅 を選択"}
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
               {/* 右側：表示専用。本体の選択結果を表示 */}
-              {resultCols.map((col) => {
+              {!row.scatterFrom &&
+                resultCols.map((col) => {
                 const result = activeOption?.results[col.key] ?? null;
                 const usesCol = row.options.some((o) => o.results[col.key]);
                 if (!usesCol) {
                   return <div key={col.key} className="min-w-0 rounded" />;
                 }
-                // 個人ギミック（緑）は自分用マーカーとして点灯トグルできる
-                const isPersonalGreen = result?.tone === "green";
-                const markId = `${row.id}:${col.key}`;
-                const lit = marks[markId];
                 return (
                   <div
                     key={col.key}
@@ -573,18 +492,6 @@ export default function Home() {
                             {result.alt.action}
                           </div>
                         </div>
-                      ) : isPersonalGreen ? (
-                        <button
-                          type="button"
-                          className={`${linkedResultBase} w-full cursor-pointer border-2 border-[#3fbf6f] font-[inherit] ${
-                            lit
-                              ? "bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
-                              : "bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
-                          }`}
-                          onClick={() => toggleMark(markId)}
-                        >
-                          {result.action}
-                        </button>
                       ) : (
                         <div
                           className={`${linkedResultBase} ${
