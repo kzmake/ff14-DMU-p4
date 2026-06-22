@@ -331,7 +331,7 @@ export default function Home() {
   }[];
   // グリッドの列幅（行見出し + 各列）。
   // 個人ギミック表示中は視線などを狭く、非表示時は残り列を等間隔にする。
-  const gridTemplate = `4rem ${visibleColumns
+  const gridTemplate = `2.8rem ${visibleColumns
     .map((c) => (showPersonal && "narrow" in c && c.narrow ? "0.55fr" : "1fr"))
     .join(" ")}`;
 
@@ -501,8 +501,8 @@ export default function Home() {
               style={{ gridTemplateColumns: gridTemplate }}
             >
               <div
-                className="flex items-center justify-center border-l-2 border-[#ffcc00] px-[2px] text-center font-bold leading-[1.2] text-white"
-                style={{ fontSize: "min(2dvh, 15px)" }}
+                className="flex items-center justify-center border-l-2 border-[#ffcc00] px-px text-center font-bold leading-[1.1] text-white"
+                style={{ fontSize: "min(1.7dvh, 13px)" }}
               >
                 {row.name}
               </div>
