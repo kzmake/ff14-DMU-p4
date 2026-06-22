@@ -10,15 +10,13 @@ const COLUMNS = [
   { key: "boss", label: "🤡本体", group: "" },
   // 早加速グループ（個人ギミックは狭く）
   { key: "e-accel", label: "💨加速", group: "早", personal: true, narrow: true },
-  { key: "e-thunder", label: "⚡雷", group: "早", personal: true, narrow: true },
-  { key: "e-water", label: "💧水", group: "早", personal: true, narrow: true },
+  { key: "e-raisui", label: "⚡💧雷水", group: "早", personal: true, narrow: true },
   { key: "e-look", label: "👁視線", group: "早", narrow: true },
   // 炎
   { key: "fire", label: "🔥", group: "" },
   // 遅加速グループ（個人ギミックは狭く）
   { key: "l-accel", label: "💨加速", group: "遅", personal: true, narrow: true },
-  { key: "l-thunder", label: "⚡雷", group: "遅", personal: true, narrow: true },
-  { key: "l-water", label: "💧水", group: "遅", personal: true, narrow: true },
+  { key: "l-raisui", label: "⚡💧雷水", group: "遅", personal: true, narrow: true },
   { key: "l-look", label: "👁視線", group: "遅", narrow: true },
   // つなみ
   { key: "tsunami", label: "🌊", group: "" },
@@ -71,13 +69,11 @@ const ROWS: Row[] = [
         tone: "blue",
         results: {
           "e-accel": { action: "止まる", tone: "green" },
-          "e-thunder": { action: "散開", tone: "green" },
-          "e-water": { action: "頭割り", tone: "green" },
+          "e-raisui": { action: "雷散開", tone: "green" },
           "e-look": { action: "見ない", tone: "blue" },
           // この時点で早/遅が分かるので遅の個人ギミックも表示
           "l-accel": { action: "止まる", tone: "green" },
-          "l-thunder": { action: "散開", tone: "green" },
-          "l-water": { action: "頭割り", tone: "green" },
+          "l-raisui": { action: "雷散開", tone: "green" },
         },
       },
       {
@@ -86,12 +82,10 @@ const ROWS: Row[] = [
         tone: "red",
         results: {
           "e-accel": { action: "動く", tone: "green" },
-          "e-thunder": { action: "頭割り", tone: "green" },
-          "e-water": { action: "散開", tone: "green" },
+          "e-raisui": { action: "水散開", tone: "green" },
           "e-look": { action: "見る", tone: "red", outline: true },
           "l-accel": { action: "動く", tone: "green" },
-          "l-thunder": { action: "頭割り", tone: "green" },
-          "l-water": { action: "散開", tone: "green" },
+          "l-raisui": { action: "水散開", tone: "green" },
         },
       },
     ],
@@ -138,11 +132,9 @@ const ROWS: Row[] = [
         tone: "blue",
         results: {
           "e-accel": { action: "止まる", tone: "green" },
-          "e-thunder": { action: "散開", tone: "green" },
-          "e-water": { action: "頭割り", tone: "green" },
+          "e-raisui": { action: "雷散開", tone: "green" },
           "l-accel": { action: "止まる", tone: "green" },
-          "l-thunder": { action: "散開", tone: "green" },
-          "l-water": { action: "頭割り", tone: "green" },
+          "l-raisui": { action: "雷散開", tone: "green" },
           "l-look": { action: "見ない", tone: "blue" },
         },
       },
@@ -152,11 +144,9 @@ const ROWS: Row[] = [
         tone: "red",
         results: {
           "e-accel": { action: "動く", tone: "green" },
-          "e-thunder": { action: "頭割り", tone: "green" },
-          "e-water": { action: "散開", tone: "green" },
+          "e-raisui": { action: "水散開", tone: "green" },
           "l-accel": { action: "動く", tone: "green" },
-          "l-thunder": { action: "頭割り", tone: "green" },
-          "l-water": { action: "散開", tone: "green" },
+          "l-raisui": { action: "水散開", tone: "green" },
           "l-look": { action: "見る", tone: "red", outline: true },
         },
       },
