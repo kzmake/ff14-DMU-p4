@@ -177,8 +177,8 @@ const ROWS: Row[] = [
       {
         key: "uso",
         label: "ウソ",
-        tone: "thunder",
-        results: { tsunami: { action: "⚡ふむ", tone: "thunder" } },
+        tone: "red",
+        results: { tsunami: { action: "⚡ふむ", tone: "red" } },
       },
     ],
   },
@@ -196,8 +196,8 @@ const ROWS: Row[] = [
       {
         key: "uso",
         label: "ウソ",
-        tone: "ice",
-        results: { tsunami: { action: "🧊ふむ", tone: "ice" } },
+        tone: "red",
+        results: { tsunami: { action: "🧊ふむ", tone: "red" } },
       },
     ],
   },
