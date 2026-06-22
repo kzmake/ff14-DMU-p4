@@ -8,15 +8,13 @@ type Tone = "blue" | "red" | "thunder" | "ice" | "both" | "safe" | "green";
 // personal: 個人ギミック（自分の早/遅デバフ依存）。トグルで非表示にできる。
 const COLUMNS = [
   { key: "boss", label: "🤡本体", group: "" },
-  // 早加速グループ（個人ギミックは狭く）
-  { key: "e-accel", label: "💨加速", group: "早", personal: true, narrow: true },
-  { key: "e-raisui", label: "⚡💧雷水", group: "早", personal: true, narrow: true },
+  // 早グループ（個人ギミックは狭く）。加速＋雷水を1列に集約
+  { key: "e-accel", label: "💨加速\n⚡💧雷水", group: "早", personal: true, narrow: true },
   { key: "e-look", label: "👁視線", group: "早", narrow: true },
   // 炎
   { key: "fire", label: "🔥", group: "" },
-  // 遅加速グループ（個人ギミックは狭く）
-  { key: "l-accel", label: "💨加速", group: "遅", personal: true, narrow: true },
-  { key: "l-raisui", label: "⚡💧雷水", group: "遅", personal: true, narrow: true },
+  // 遅グループ（個人ギミックは狭く）。加速＋雷水を1列に集約
+  { key: "l-accel", label: "💨加速\n⚡💧雷水", group: "遅", personal: true, narrow: true },
   { key: "l-look", label: "👁視線", group: "遅", narrow: true },
   // つなみ
   { key: "tsunami", label: "🌊", group: "" },
@@ -33,6 +31,8 @@ type ResultCell = {
   alt?: { action: string; tone: Tone };
   // 塗りつぶしなし・枠線だけで表示する（例：ふまない）
   outline?: boolean;
+  // 1セルに複数結果を縦積みで表示（例：加速＋雷水）。指定時は action/tone より優先。
+  stack?: { action: string; tone: Tone }[];
 };
 
 // 本体列のボタン1つ。押すと results の各列に結果が表示される。
@@ -68,12 +68,24 @@ const ROWS: Row[] = [
         label: "ホント",
         tone: "blue",
         results: {
-          "e-accel": { action: "止まる", tone: "green" },
-          "e-raisui": { action: "雷散開", tone: "green" },
+          "e-accel": {
+            action: "止まる",
+            tone: "green",
+            stack: [
+              { action: "止まる", tone: "green" },
+              { action: "雷散開", tone: "green" },
+            ],
+          },
           "e-look": { action: "見ない", tone: "blue" },
           // この時点で早/遅が分かるので遅の個人ギミックも表示
-          "l-accel": { action: "止まる", tone: "green" },
-          "l-raisui": { action: "雷散開", tone: "green" },
+          "l-accel": {
+            action: "止まる",
+            tone: "green",
+            stack: [
+              { action: "止まる", tone: "green" },
+              { action: "雷散開", tone: "green" },
+            ],
+          },
         },
       },
       {
@@ -81,43 +93,43 @@ const ROWS: Row[] = [
         label: "ウソ",
         tone: "red",
         results: {
-          "e-accel": { action: "動く", tone: "green" },
-          "e-raisui": { action: "水散開", tone: "green" },
+          "e-accel": {
+            action: "動く",
+            tone: "green",
+            stack: [
+              { action: "動く", tone: "green" },
+              { action: "水散開", tone: "green" },
+            ],
+          },
           "e-look": { action: "見る", tone: "red", outline: true },
-          "l-accel": { action: "動く", tone: "green" },
-          "l-raisui": { action: "水散開", tone: "green" },
+          "l-accel": {
+            action: "動く",
+            tone: "green",
+            stack: [
+              { action: "動く", tone: "green" },
+              { action: "水散開", tone: "green" },
+            ],
+          },
         },
       },
     ],
   },
   {
     id: "fire",
-    name: "🔥🌊1",
+    name: "🔥",
     cols: 2,
     options: [
       {
         key: "fire-honto",
-        label: "🔥ホント",
+        label: "ホント",
         tone: "blue",
         results: { fire: { action: "🔥離れる", tone: "blue" } },
       },
       {
         key: "fire-uso",
-        label: "🔥ウソ",
+        label: "ウソ",
         tone: "red",
         results: { fire: { action: "🔥集合", tone: "red", outline: true } },
-      },
-      {
-        key: "tsunami-honto",
-        label: "🌊ホント",
-        tone: "blue",
-        results: { tsunami: { action: "🌊集合", tone: "blue", outline: true } },
-      },
-      {
-        key: "tsunami-uso",
-        label: "🌊ウソ",
-        tone: "red",
-        results: { tsunami: { action: "🌊離れる", tone: "red" } },
       },
     ],
   },
@@ -131,10 +143,22 @@ const ROWS: Row[] = [
         label: "ホント",
         tone: "blue",
         results: {
-          "e-accel": { action: "止まる", tone: "green" },
-          "e-raisui": { action: "雷散開", tone: "green" },
-          "l-accel": { action: "止まる", tone: "green" },
-          "l-raisui": { action: "雷散開", tone: "green" },
+          "e-accel": {
+            action: "止まる",
+            tone: "green",
+            stack: [
+              { action: "止まる", tone: "green" },
+              { action: "雷散開", tone: "green" },
+            ],
+          },
+          "l-accel": {
+            action: "止まる",
+            tone: "green",
+            stack: [
+              { action: "止まる", tone: "green" },
+              { action: "雷散開", tone: "green" },
+            ],
+          },
           "l-look": { action: "見ない", tone: "blue" },
         },
       },
@@ -143,10 +167,22 @@ const ROWS: Row[] = [
         label: "ウソ",
         tone: "red",
         results: {
-          "e-accel": { action: "動く", tone: "green" },
-          "e-raisui": { action: "水散開", tone: "green" },
-          "l-accel": { action: "動く", tone: "green" },
-          "l-raisui": { action: "水散開", tone: "green" },
+          "e-accel": {
+            action: "動く",
+            tone: "green",
+            stack: [
+              { action: "動く", tone: "green" },
+              { action: "水散開", tone: "green" },
+            ],
+          },
+          "l-accel": {
+            action: "動く",
+            tone: "green",
+            stack: [
+              { action: "動く", tone: "green" },
+              { action: "水散開", tone: "green" },
+            ],
+          },
           "l-look": { action: "見る", tone: "red", outline: true },
         },
       },
@@ -154,31 +190,18 @@ const ROWS: Row[] = [
   },
   {
     id: "tsunami",
-    name: "🔥🌊2",
+    name: "🌊",
     cols: 2,
-    mirrorOf: "fire", // 1回目（🔥🌊1）で選んだ種別の逆だけ選べる
     options: [
       {
-        key: "fire-honto",
-        label: "🔥ホント",
-        tone: "blue",
-        results: { fire: { action: "🔥離れる", tone: "blue" } },
-      },
-      {
-        key: "fire-uso",
-        label: "🔥ウソ",
-        tone: "red",
-        results: { fire: { action: "🔥集合", tone: "red", outline: true } },
-      },
-      {
         key: "tsunami-honto",
-        label: "🌊ホント",
+        label: "ホント",
         tone: "blue",
         results: { tsunami: { action: "🌊集合", tone: "blue", outline: true } },
       },
       {
         key: "tsunami-uso",
-        label: "🌊ウソ",
+        label: "ウソ",
         tone: "red",
         results: { tsunami: { action: "🌊離れる", tone: "red" } },
       },
@@ -546,7 +569,29 @@ export default function Home() {
                     className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]"
                   >
                     {result ? (
-                      result.alt ? (
+                      result.stack ? (
+                        // 1セルに複数結果を縦積み（例：加速＋雷水）。各々タップで点灯
+                        <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-[3px]">
+                          {result.stack.map((s, i) => {
+                            const subId = `${markId}:${i}`;
+                            const subLit = marks[subId];
+                            return (
+                              <button
+                                key={subId}
+                                type="button"
+                                className={`${linkedResultBase} w-full cursor-pointer border-2 border-[#3fbf6f] font-[inherit] ${
+                                  subLit
+                                    ? "bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
+                                    : "bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
+                                }`}
+                                onClick={() => toggleMark(subId)}
+                              >
+                                {s.action}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : result.alt ? (
                         // ほんと/ウソで対照になる2候補を枠線だけで並べて表示
                         <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-px">
                           <div
