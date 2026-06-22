@@ -33,6 +33,8 @@ type ResultCell = {
   tone: Tone;
   // ウソ（対照）時の結果。あると2候補表示になる。
   alt?: { action: string; tone: Tone };
+  // 塗りつぶしなし・枠線だけで表示する（例：ふまない）
+  outline?: boolean;
 };
 
 // 本体列のボタン1つ。押すと results の各列に結果が表示される。
@@ -201,7 +203,7 @@ const ROWS: Row[] = [
         key: "honto",
         label: "ホント",
         tone: "blue",
-        results: { tsunami: { action: "⚡ふまない", tone: "blue" } },
+        results: { tsunami: { action: "⚡ふまない", tone: "blue", outline: true } },
       },
       {
         key: "uso",
@@ -220,7 +222,7 @@ const ROWS: Row[] = [
         key: "honto",
         label: "ホント",
         tone: "blue",
-        results: { tsunami: { action: "🧊ふまない", tone: "blue" } },
+        results: { tsunami: { action: "🧊ふまない", tone: "blue", outline: true } },
       },
       {
         key: "uso",
@@ -584,7 +586,11 @@ export default function Home() {
                           {result.action}
                         </button>
                       ) : (
-                        <div className={`${linkedResultBase} ${toneClass[result.tone]}`}>
+                        <div
+                          className={`${linkedResultBase} ${
+                            result.outline ? outlineClass[result.tone] : toneClass[result.tone]
+                          }`}
+                        >
                           {result.action}
                         </div>
                       )
