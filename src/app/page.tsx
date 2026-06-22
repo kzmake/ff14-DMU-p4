@@ -193,57 +193,40 @@ const ROWS: Row[] = [
     ],
   },
   {
-    id: "magic",
-    name: "チャージ",
+    id: "charge-thunder",
+    name: "⚡",
     cols: 2,
     options: [
       {
-        key: "none",
-        label: "踏まない",
+        key: "honto",
+        label: "ホント\n踏まない",
         tone: "blue",
-        results: {
-          tsunami: {
-            action: "踏まない",
-            tone: "blue",
-            alt: { action: "全部ふむ", tone: "red" },
-          },
-        },
+        results: {},
       },
       {
-        key: "thunder",
-        label: "雷だけ",
+        key: "uso",
+        label: "ウソ\n踏む",
         tone: "thunder",
-        results: {
-          tsunami: {
-            action: "雷だけ",
-            tone: "thunder",
-            alt: { action: "氷だけ", tone: "ice" },
-          },
-        },
+        results: {},
+      },
+    ],
+  },
+  {
+    id: "charge-ice",
+    name: "🧊",
+    cols: 2,
+    options: [
+      {
+        key: "honto",
+        label: "ホント\n踏まない",
+        tone: "blue",
+        results: {},
       },
       {
-        key: "ice",
-        label: "氷だけ",
+        key: "uso",
+        label: "ウソ\n踏む",
         tone: "ice",
-        results: {
-          tsunami: {
-            action: "氷だけ",
-            tone: "ice",
-            alt: { action: "雷だけ", tone: "thunder" },
-          },
-        },
-      },
-      {
-        key: "both",
-        label: "全部ふむ",
-        tone: "red",
-        results: {
-          tsunami: {
-            action: "全部ふむ",
-            tone: "red",
-            alt: { action: "踏まない", tone: "blue" },
-          },
-        },
+        results: {},
       },
     ],
   },
@@ -541,7 +524,7 @@ export default function Home() {
                         <button
                           key={opt.key}
                           type="button"
-                          className={`h-full w-full min-h-0 min-w-0 cursor-pointer rounded border p-0 text-[0.85rem] font-bold ${
+                          className={`h-full w-full min-h-0 min-w-0 cursor-pointer rounded border p-0 text-[0.85rem] font-bold leading-[1.15] whitespace-pre-line ${
                             isActive ? toneClass[opt.tone] : "border-[#444] bg-[#222] text-[#ccc]"
                           }`}
                           onClick={() => setSelect(row.id, opt.key)}
