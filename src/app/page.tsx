@@ -199,15 +199,15 @@ const ROWS: Row[] = [
     options: [
       {
         key: "honto",
-        label: "ホント\n踏まない",
+        label: "ホント",
         tone: "blue",
-        results: {},
+        results: { tsunami: { action: "⚡ふまない", tone: "blue" } },
       },
       {
         key: "uso",
-        label: "ウソ\n踏む",
+        label: "ウソ",
         tone: "thunder",
-        results: {},
+        results: { tsunami: { action: "⚡ふむ", tone: "thunder" } },
       },
     ],
   },
@@ -218,15 +218,15 @@ const ROWS: Row[] = [
     options: [
       {
         key: "honto",
-        label: "ホント\n踏まない",
+        label: "ホント",
         tone: "blue",
-        results: {},
+        results: { tsunami: { action: "🧊ふまない", tone: "blue" } },
       },
       {
         key: "uso",
-        label: "ウソ\n踏む",
+        label: "ウソ",
         tone: "ice",
-        results: {},
+        results: { tsunami: { action: "🧊ふむ", tone: "ice" } },
       },
     ],
   },
@@ -524,7 +524,7 @@ export default function Home() {
                         <button
                           key={opt.key}
                           type="button"
-                          className={`h-full w-full min-h-0 min-w-0 cursor-pointer rounded border p-0 text-[0.85rem] font-bold leading-[1.15] whitespace-pre-line ${
+                          className={`h-full w-full min-h-0 min-w-0 cursor-pointer rounded border p-0 text-[0.85rem] font-bold ${
                             isActive ? toneClass[opt.tone] : "border-[#444] bg-[#222] text-[#ccc]"
                           }`}
                           onClick={() => setSelect(row.id, opt.key)}
