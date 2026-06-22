@@ -45,3 +45,17 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* 自動連動で点灯した緑マーカーの点滅（雷水の早/遅 逆連動） */
+@keyframes markBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.mark-blink {
+  animation: markBlink 0.9s ease-in-out infinite;
+}
