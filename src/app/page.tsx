@@ -51,13 +51,7 @@ type Row = {
   name: string;
   cols: number; // 本体列ボタンのグリッド列数
   options: Option[];
-  // ほのお/つなみ用：指定した行と逆の種別だけを選べるようにする
-  mirrorOf?: string;
 };
-
-// option.key から種別（fire / tsunami）を取り出す
-const elementKind = (optionKey: string): "fire" | "tsunami" | null =>
-  optionKey.startsWith("fire") ? "fire" : optionKey.startsWith("tsunami") ? "tsunami" : null;
 
 const ROWS: Row[] = [
   {
@@ -97,8 +91,8 @@ const ROWS: Row[] = [
     ],
   },
   {
-    id: "fire1",
-    name: "🔥🌊1",
+    id: "fire",
+    name: "🔥",
     cols: 2,
     options: [
       {
@@ -112,18 +106,6 @@ const ROWS: Row[] = [
         label: "🔥ウソ",
         tone: "red",
         results: { fire: { action: "🔥集合", tone: "red", outline: true } },
-      },
-      {
-        key: "tsunami-honto",
-        label: "🌊ホント",
-        tone: "blue",
-        results: { tsunami: { action: "🌊集合", tone: "blue", outline: true } },
-      },
-      {
-        key: "tsunami-uso",
-        label: "🌊ウソ",
-        tone: "red",
-        results: { tsunami: { action: "🌊離れる", tone: "red" } },
       },
     ],
   },
@@ -163,23 +145,10 @@ const ROWS: Row[] = [
     ],
   },
   {
-    id: "tsunami1",
-    name: "🔥🌊2",
+    id: "tsunami",
+    name: "🌊",
     cols: 2,
-    mirrorOf: "fire1", // 1回目で選んだ種別の逆だけ選べる
     options: [
-      {
-        key: "fire-honto",
-        label: "🔥ホント",
-        tone: "blue",
-        results: { fire: { action: "🔥離れる", tone: "blue" } },
-      },
-      {
-        key: "fire-uso",
-        label: "🔥ウソ",
-        tone: "red",
-        results: { fire: { action: "🔥集合", tone: "red", outline: true } },
-      },
       {
         key: "tsunami-honto",
         label: "🌊ホント",
@@ -476,22 +445,7 @@ export default function Home() {
           const activeKey = selections[row.id] ?? null;
           const zebra = rowIndex % 2 === 0 ? "bg-[#1c1c1c]" : "bg-black";
 
-          // ほのお/つなみ逆連動：参照元の種別の逆だけを表示
-          let displayOptions = row.options;
-          let mirrorWaiting = false;
-          if (row.mirrorOf) {
-            const srcKey = selections[row.mirrorOf] ?? null;
-            const srcKind = srcKey ? elementKind(srcKey) : null;
-            if (srcKind) {
-              const wantKind = srcKind === "fire" ? "tsunami" : "fire";
-              displayOptions = row.options.filter((o) => elementKind(o.key) === wantKind);
-            } else {
-              // 1回目が未選択なら2回目は待機表示
-              mirrorWaiting = true;
-            }
-          }
-
-          // 表示中のオプションに含まれる選択だけ有効（連動で種別が変わったら無効化）
+          const displayOptions = row.options;
           const activeOption = displayOptions.find((o) => o.key === activeKey) ?? null;
 
           return (
@@ -509,34 +463,28 @@ export default function Home() {
 
               {/* 本体列：操作ボタン */}
               <div className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]">
-                {mirrorWaiting ? (
-                  <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.85rem] text-[#777]">
-                    ↑1回目を選択
-                  </div>
-                ) : (
-                  <div
-                    className="grid min-h-0 flex-1 auto-rows-fr gap-[3px]"
-                    style={{
-                      gridTemplateColumns: `repeat(${displayOptions.length === 4 ? 2 : displayOptions.length}, 1fr)`,
-                    }}
-                  >
-                    {displayOptions.map((opt) => {
-                      const isActive = activeKey === opt.key;
-                      return (
-                        <button
-                          key={opt.key}
-                          type="button"
-                          className={`h-full w-full min-h-0 min-w-0 cursor-pointer rounded border p-0 text-[0.85rem] font-bold ${
-                            isActive ? toneClass[opt.tone] : "border-[#444] bg-[#222] text-[#ccc]"
-                          }`}
-                          onClick={() => setSelect(row.id, opt.key)}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                <div
+                  className="grid min-h-0 flex-1 auto-rows-fr gap-[3px]"
+                  style={{
+                    gridTemplateColumns: `repeat(${displayOptions.length === 4 ? 2 : displayOptions.length}, 1fr)`,
+                  }}
+                >
+                  {displayOptions.map((opt) => {
+                    const isActive = activeKey === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        className={`h-full w-full min-h-0 min-w-0 cursor-pointer rounded border p-0 text-[0.85rem] font-bold ${
+                          isActive ? toneClass[opt.tone] : "border-[#444] bg-[#222] text-[#ccc]"
+                        }`}
+                        onClick={() => setSelect(row.id, opt.key)}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* 右側：表示専用。本体の選択結果を表示 */}
