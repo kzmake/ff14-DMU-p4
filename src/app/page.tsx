@@ -9,12 +9,12 @@ type Tone = "blue" | "red" | "thunder" | "ice" | "both" | "safe" | "green";
 const COLUMNS = [
   { key: "boss", label: "🤡本体", group: "" },
   // 早グループ（個人ギミックは狭く）。加速＋雷水を1列に集約
-  { key: "e-accel", label: "💨加速\n⚡💧雷水", group: "早", personal: true, narrow: true },
+  { key: "e-accel", label: "加速・⚡💧", group: "早", personal: true, narrow: true },
   { key: "e-look", label: "👁視線", group: "早", narrow: true },
   // 炎
   { key: "fire", label: "🔥", group: "" },
   // 遅グループ（個人ギミックは狭く）。加速＋雷水を1列に集約
-  { key: "l-accel", label: "💨加速\n⚡💧雷水", group: "遅", personal: true, narrow: true },
+  { key: "l-accel", label: "加速・⚡💧", group: "遅", personal: true, narrow: true },
   { key: "l-look", label: "👁視線", group: "遅", narrow: true },
   // つなみ
   { key: "tsunami", label: "🌊", group: "" },
