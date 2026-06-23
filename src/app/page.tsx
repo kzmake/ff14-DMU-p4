@@ -528,6 +528,12 @@ export default function Home() {
               />
             </span>
           </button>
+          <RowToggle
+            label="結果タイムライン"
+            checked={showTimeline}
+            onChange={() => setShowTimeline((v) => !v)}
+          />
+          <RowToggle label="⚡🧊" checked={showCharge} onChange={() => setShowCharge((v) => !v)} />
           <button
             type="button"
             className="cursor-pointer rounded border-none bg-[#ff3333] px-2 py-[3px] text-[0.85em] font-bold text-white"
@@ -540,19 +546,6 @@ export default function Home() {
 
       {/* 表全体：利用可能な高さいっぱいに広げ、各行で等分する */}
       <div className="flex h-full min-h-0 flex-1 flex-col gap-[2px]">
-        {/* 表示切替トグル行（結果タイムライン / ⚡🧊） */}
-        <div
-          className="flex shrink-0 items-center justify-end gap-3 pr-px pb-[2px]"
-          style={{ fontSize: "min(2dvh, 15px)" }}
-        >
-          <RowToggle
-            label="結果タイムライン"
-            checked={showTimeline}
-            onChange={() => setShowTimeline((v) => !v)}
-          />
-          <RowToggle label="⚡🧊" checked={showCharge} onChange={() => setShowCharge((v) => !v)} />
-        </div>
-
         {/* 用途見出し行：本体＝記憶、それ以外＝タイムライン（小さめ＝2dvh基準） */}
         <div
           className="grid shrink-0 gap-[3px]"
