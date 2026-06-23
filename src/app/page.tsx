@@ -356,7 +356,7 @@ export default function Home() {
 
   // 緑マーカーの点灯ルール（要素ごとに独立）
   //  - 加速(:0)  : GC1/GC2 合わせて1つだけ。後から押したものに移る。
-  //  - 雷水(:1)  : 押すと同行の反対雷水を無効化し、早/遅が逆の相手を点灯させる。
+  //  - 雷水(:1)  : 押すと自分＋対角(GC・早遅とも逆)を点灯し、同行・同列は薄表示にする。
   const toggleMark = (_rowId: string, id: string) => {
     const wasLit = marks[id];
     const isAccel = id.endsWith(":0");
@@ -371,12 +371,13 @@ export default function Home() {
         for (const k of ACCEL_KEYS) next[k] = false;
         if (!wasLit) next[id] = true;
       } else if (!wasLit) {
-        // 雷水：対象＋早遅逆の相手を点灯。同行の反対は消灯。
+        // 雷水：自分＋対角を点灯。同行・同列は消灯（薄表示にまわす）。
         next[id] = true;
         if (partner) next[partner] = true;
         if (sameRow) next[sameRow] = false;
+        if (otherGc) next[otherGc] = false;
       } else {
-        // 再押下で消灯：対象＋相手をまとめて消灯
+        // 再押下で消灯：自分＋対角をまとめて消灯
         next[id] = false;
         if (partner) next[partner] = false;
       }
