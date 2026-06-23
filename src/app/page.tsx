@@ -288,11 +288,51 @@ const FONT_OPTIONS: { key: FontSize; label: string }[] = [
 const linkedResultBase =
   "flex flex-1 min-h-0 items-center justify-center text-center text-[0.77rem] font-bold rounded leading-[1.15] p-px whitespace-pre-line break-all";
 
+// 小さなトグルスイッチ（個人ギミックと同デザイン）。表の上部の表示切替に使う。
+function RowToggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      className="group inline-flex cursor-pointer items-center gap-1.5 border-none bg-transparent p-0"
+      onClick={onChange}
+    >
+      <span className={`text-[0.85em] font-bold ${checked ? "text-[#ffcc00]" : "text-[#aaa]"}`}>
+        {label}
+      </span>
+      <span
+        className={`relative h-[16px] w-[30px] rounded-[8px] border transition-[background,border-color] duration-150 ${
+          checked ? "border-[#e6b800] bg-[#ffcc00]" : "border-[#555] bg-[#444]"
+        }`}
+      >
+        <span
+          className={`absolute top-px left-px h-[12px] w-[12px] rounded-full transition-[transform,background] duration-150 ${
+            checked ? "translate-x-[14px] bg-[#0f0f0f]" : "bg-[#ccc]"
+          }`}
+        />
+      </span>
+    </button>
+  );
+}
+
 export default function Home() {
   // rowId -> 選択した option.key
   const [selections, setSelections] = useState<Record<string, string | null>>({});
   // 個人ギミック（加速度・雷水）の表示トグル。既定でオン。
   const [showPersonal, setShowPersonal] = useState(true);
+  // 結果タイムライン（結果セルの中身）の表示トグル。既定でオン。
+  const [showTimeline, setShowTimeline] = useState(true);
+  // ⚡🧊（charge）行の表示トグル。既定でオン。
+  const [showCharge, setShowCharge] = useState(true);
   // 個人ギミックの「自分用マーカー」点灯（"rowId:colKey" -> bool）
   const [marks, setMarks] = useState<Record<string, boolean>>({});
   // 雷水を押したとき、関連する雷水をグレーで薄く表示するマーカー（クリックは可能）
@@ -500,6 +540,19 @@ export default function Home() {
 
       {/* 表全体：利用可能な高さいっぱいに広げ、各行で等分する */}
       <div className="flex h-full min-h-0 flex-1 flex-col gap-[2px]">
+        {/* 表示切替トグル行（結果タイムライン / ⚡🧊） */}
+        <div
+          className="flex shrink-0 items-center justify-end gap-3 pr-px pb-[2px]"
+          style={{ fontSize: "min(2dvh, 15px)" }}
+        >
+          <RowToggle
+            label="結果タイムライン"
+            checked={showTimeline}
+            onChange={() => setShowTimeline((v) => !v)}
+          />
+          <RowToggle label="⚡🧊" checked={showCharge} onChange={() => setShowCharge((v) => !v)} />
+        </div>
+
         {/* 用途見出し行：本体＝記憶、それ以外＝タイムライン（小さめ＝2dvh基準） */}
         <div
           className="grid shrink-0 gap-[3px]"
@@ -562,8 +615,8 @@ export default function Home() {
           ))}
         </div>
 
-        {/* 縦軸＝判断していく行 */}
-        {ROWS.map((row, rowIndex) => {
+        {/* 縦軸＝判断していく行（⚡🧊行はトグルOFFで隠す） */}
+        {ROWS.filter((row) => showCharge || !row.id.startsWith("charge-")).map((row, rowIndex) => {
           const activeKey = selections[row.id] ?? null;
           const zebra = rowIndex % 2 === 0 ? "bg-[#1c1c1c]" : "bg-black";
 
@@ -646,7 +699,10 @@ export default function Home() {
                     key={col.key}
                     className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]"
                   >
-                    {result ? (
+                    {!showTimeline ? (
+                      // 結果タイムラインOFF：結果セルの中身だけ隠す（列・枠は残す）
+                      <div className="min-h-0 flex-1" />
+                    ) : result ? (
                       result.stack ? (
                         // 縦積み：上=加速(個人ギミック・緑)、下=雷水(常表示・青赤・クリック連動)
                         <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-[3px]">
