@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { SummaryView } from "@/components/Board";
 import { type BoardState, INITIAL_BOARD_STATE } from "@/lib/boardState";
+import { useDocumentPip } from "@/lib/useDocumentPip";
 import { useShareConnection } from "@/lib/useShareConnection";
 
 // /share/[code]/result — 最終結果だけをサーバーから受け続けて表示する読み取り専用ビュー。
@@ -40,13 +42,31 @@ export default function SharedResult({ code }: { code: string }) {
     return () => clearInterval(t);
   }, [connected, pullOnce]);
 
+  // 最終結果を最前面の小窓(Document PiP)に出すためのフック
+  const { container: pipContainer, toggle: togglePip, open: pipOpen } = useDocumentPip();
+
   return (
     <>
       <div
         className="flex shrink-0 items-center justify-between border-b-2 border-[#ffcc00] mb-1 pb-[3px]"
         style={{ fontSize: "min(2dvh, 16px)" }}
       >
-        <div className="text-[1.1em] font-bold text-[#ffcc00]">🏁 最終結果</div>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            className={`inline-flex h-[1.6em] cursor-pointer items-center justify-center gap-[0.2em] rounded border px-[0.4em] text-[0.8em] font-bold leading-none ${
+              pipOpen
+                ? "border-[#ffcc00] bg-[#2a2a2a] text-[#ffcc00]"
+                : "border-[#555] bg-[#1c1c1c] text-[#ffcc00] hover:border-[#ffcc00] hover:bg-[#2a2a2a]"
+            }`}
+            onClick={togglePip}
+            aria-label="最終結果を別窓(最前面)で表示"
+            title="最終結果を別窓(最前面)で表示"
+          >
+            🪟 PiP
+          </button>
+          <div className="text-[1.1em] font-bold text-[#ffcc00]">🏁 最終結果</div>
+        </div>
         <span
           className={`inline-flex items-center gap-1 rounded border px-[0.4em] py-[0.1em] text-[0.7em] font-bold ${
             connected
@@ -58,6 +78,9 @@ export default function SharedResult({ code }: { code: string }) {
         </span>
       </div>
       <SummaryView state={state} variant="full" />
+
+      {/* Document PiP の小窓へ最終結果を描画（state と自動同期） */}
+      {pipContainer && createPortal(<SummaryView state={state} variant="pip" />, pipContainer)}
     </>
   );
 }
