@@ -295,8 +295,8 @@ export default function Home() {
   const [showPersonal, setShowPersonal] = useState(true);
   // 個人ギミックの「自分用マーカー」点灯（"rowId:colKey" -> bool）
   const [marks, setMarks] = useState<Record<string, boolean>>({});
-  // 連動で自動点灯した雷水マーカー（点滅表示する。手動点灯と区別）
-  const [autoMarks, setAutoMarks] = useState<Record<string, boolean>>({});
+  // 同行の反対雷水を押せなくする（無効化）マーカー
+  const [disabledMarks, setDisabledMarks] = useState<Record<string, boolean>>({});
   // フルスクリーン状態
   const [isFullscreen, setIsFullscreen] = useState(false);
   // フォントサイズ（大中小）。既定は大。
@@ -336,13 +336,23 @@ export default function Home() {
     return `${otherRow}:${otherCol}-accel:1`;
   };
 
+  // 雷水マーカーのキーから、同じGC行内の反対側（早↔遅）の雷水キーを返す。
+  // 雷水でなければ null。例: gc1:e-accel:1 → gc1:l-accel:1
+  const raisuiSameRow = (id: string): string | null => {
+    const m = /^(gc1|gc2):(e|l)-accel:1$/.exec(id);
+    if (!m) return null;
+    const otherCol = m[2] === "e" ? "l" : "e";
+    return `${m[1]}:${otherCol}-accel:1`;
+  };
+
   // 緑マーカーの点灯ルール（要素ごとに独立）
   //  - 加速(:0)  : GC1/GC2 合わせて1つだけ。後から押したものに移る。
-  //  - 雷水(:1)  : GC1↔GC2 で早/遅が逆になるよう相手も自動点灯（点滅・両方向）。
+  //  - 雷水(:1)  : 押すと同行の反対雷水を無効化し、早/遅が逆の相手を点灯させる。
   const toggleMark = (_rowId: string, id: string) => {
     const wasLit = marks[id];
     const isAccel = id.endsWith(":0");
     const partner = raisuiPartner(id);
+    const sameRow = raisuiSameRow(id);
 
     setMarks((prev) => {
       const next: Record<string, boolean> = { ...prev };
@@ -350,26 +360,23 @@ export default function Home() {
         // 加速：4つを全消ししてから対象だけ点灯（点灯中を再押下なら消灯）
         for (const k of ACCEL_KEYS) next[k] = false;
         if (!wasLit) next[id] = true;
+      } else if (!wasLit) {
+        // 雷水：対象＋早遅逆の相手を点灯。同行の反対は消灯。
+        next[id] = true;
+        if (partner) next[partner] = true;
+        if (sameRow) next[sameRow] = false;
       } else {
-        // 雷水：対象＋相手をトグル
-        if (!wasLit) {
-          next[id] = true;
-          if (partner) next[partner] = true;
-        } else {
-          next[id] = false;
-          if (partner) next[partner] = false;
-        }
+        // 再押下で消灯：対象＋相手をまとめて消灯
+        next[id] = false;
+        if (partner) next[partner] = false;
       }
       return next;
     });
 
-    // 自動点滅マーカー（雷水の相手だけ）を更新。まず両者をクリアし、点灯時のみ相手を点滅。
-    setAutoMarks((prev) => {
-      const next = { ...prev };
-      next[id] = false;
-      if (partner) next[partner] = !wasLit;
-      return next;
-    });
+    // 同行の反対雷水を押せなくする（再押下で解除）
+    if (sameRow) {
+      setDisabledMarks((prev) => ({ ...prev, [sameRow]: !wasLit }));
+    }
   };
 
   const setSelect = (rowId: string, optionKey: string) => {
@@ -383,7 +390,7 @@ export default function Home() {
   const resetAll = () => {
     setSelections({});
     setMarks({});
-    setAutoMarks({});
+    setDisabledMarks({});
   };
 
   // トグルOFFのとき個人ギミック列を隠す
@@ -394,10 +401,8 @@ export default function Home() {
     group: string;
   }[];
   // グリッドの列幅（行見出し + 各列）。
-  // 個人ギミック表示中は視線などを狭く、非表示時は残り列を等間隔にする。
-  const gridTemplate = `2.8rem ${visibleColumns
-    .map((c) => (showPersonal && "narrow" in c && c.narrow ? "0.55fr" : "1fr"))
-    .join(" ")}`;
+  // タイムライン列はすべて等幅（narrow 指定は無視）。
+  const gridTemplate = `2.8rem ${visibleColumns.map(() => "1fr").join(" ")}`;
 
   return (
     <>
@@ -626,16 +631,19 @@ export default function Home() {
                           {result.stack.map((s, i) => {
                             const subId = `${markId}:${i}`;
                             const subLit = marks[subId];
-                            const subAuto = autoMarks[subId] && subLit;
+                            const subDisabled = disabledMarks[subId];
                             return (
                               <button
                                 key={subId}
                                 type="button"
-                                className={`${linkedResultBase} w-full cursor-pointer border-2 border-[#3fbf6f] font-[inherit] ${
-                                  subLit
-                                    ? "bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
-                                    : "bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
-                                } ${subAuto ? "mark-blink" : ""}`}
+                                disabled={subDisabled}
+                                className={`${linkedResultBase} w-full border-2 border-[#3fbf6f] font-[inherit] ${
+                                  subDisabled
+                                    ? "cursor-not-allowed border-[#333] bg-[rgba(255,255,255,0.02)] text-[#444] opacity-40"
+                                    : subLit
+                                      ? "cursor-pointer bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
+                                      : "cursor-pointer bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
+                                }`}
                                 onClick={() => toggleMark(row.id, subId)}
                               >
                                 {s.action}
