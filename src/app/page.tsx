@@ -69,21 +69,21 @@ const ROWS: Row[] = [
         tone: "blue",
         results: {
           "e-accel": {
-            action: "止まる",
+            action: "動かない",
             tone: "green",
             stack: [
-              { action: "止まる", tone: "green" },
-              { action: "雷散開", tone: "green" },
+              { action: "動かない", tone: "green" },
+              { action: "雷さんかい", tone: "green" },
             ],
           },
           "e-look": { action: "見ない", tone: "blue" },
           // この時点で早/遅が分かるので遅の個人ギミックも表示
           "l-accel": {
-            action: "止まる",
+            action: "動かない",
             tone: "green",
             stack: [
-              { action: "止まる", tone: "green" },
-              { action: "雷散開", tone: "green" },
+              { action: "動かない", tone: "green" },
+              { action: "雷さんかい", tone: "green" },
             ],
           },
         },
@@ -98,7 +98,7 @@ const ROWS: Row[] = [
             tone: "green",
             stack: [
               { action: "動く", tone: "green" },
-              { action: "水散開", tone: "green" },
+              { action: "水さんかい", tone: "green" },
             ],
           },
           "e-look": { action: "見る", tone: "red", outline: true },
@@ -107,7 +107,7 @@ const ROWS: Row[] = [
             tone: "green",
             stack: [
               { action: "動く", tone: "green" },
-              { action: "水散開", tone: "green" },
+              { action: "水さんかい", tone: "green" },
             ],
           },
         },
@@ -144,19 +144,19 @@ const ROWS: Row[] = [
         tone: "blue",
         results: {
           "e-accel": {
-            action: "止まる",
+            action: "動かない",
             tone: "green",
             stack: [
-              { action: "止まる", tone: "green" },
-              { action: "雷散開", tone: "green" },
+              { action: "動かない", tone: "green" },
+              { action: "雷さんかい", tone: "green" },
             ],
           },
           "l-accel": {
-            action: "止まる",
+            action: "動かない",
             tone: "green",
             stack: [
-              { action: "止まる", tone: "green" },
-              { action: "雷散開", tone: "green" },
+              { action: "動かない", tone: "green" },
+              { action: "雷さんかい", tone: "green" },
             ],
           },
           "l-look": { action: "見ない", tone: "blue" },
@@ -172,7 +172,7 @@ const ROWS: Row[] = [
             tone: "green",
             stack: [
               { action: "動く", tone: "green" },
-              { action: "水散開", tone: "green" },
+              { action: "水さんかい", tone: "green" },
             ],
           },
           "l-accel": {
@@ -180,7 +180,7 @@ const ROWS: Row[] = [
             tone: "green",
             stack: [
               { action: "動く", tone: "green" },
-              { action: "水散開", tone: "green" },
+              { action: "水さんかい", tone: "green" },
             ],
           },
           "l-look": { action: "見る", tone: "red", outline: true },
