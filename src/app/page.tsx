@@ -650,16 +650,22 @@ export default function Home() {
             <div className="min-w-0 rounded" />
             {resultCols.map((col) => {
               // 集約：stack（加速/雷水）は点灯したものだけ。それ以外はそのまま。
-              const items = summaryByCol(col.key).flatMap(({ rowId, cell }) => {
+              const raw = summaryByCol(col.key).flatMap(({ rowId, cell }) => {
                 if (cell.stack) {
-                  // 雷水(i=1)を加速(i=0)より上に出すため逆順で並べる
+                  // i=0=加速, i=1=雷水。点灯したものだけ、種別(rank)付きで返す。
                   return cell.stack
-                    .map((s, i) => ({ s, lit: marks[`${rowId}:${col.key}:${i}`], outline: false }))
-                    .filter((x) => x.lit)
-                    .reverse();
+                    .map((s, i) => ({
+                      s,
+                      lit: marks[`${rowId}:${col.key}:${i}`],
+                      outline: false,
+                      rank: i === 1 ? 0 : 1, // 雷水=0(上), 加速=1(下)
+                    }))
+                    .filter((x) => x.lit);
                 }
-                return [{ s: { action: cell.action, tone: cell.tone }, lit: true, outline: !!cell.outline }];
+                return [{ s: { action: cell.action, tone: cell.tone }, lit: true, outline: !!cell.outline, rank: 0 }];
               });
+              // 雷水(rank0)を上、加速(rank1)を下にまとめる
+              const items = raw.slice().sort((a, b) => a.rank - b.rank);
               return (
                 <div
                   key={col.key}
