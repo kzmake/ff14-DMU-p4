@@ -652,9 +652,11 @@ export default function Home() {
               // 集約：stack（加速/雷水）は点灯したものだけ。それ以外はそのまま。
               const items = summaryByCol(col.key).flatMap(({ rowId, cell }) => {
                 if (cell.stack) {
+                  // 雷水(i=1)を加速(i=0)より上に出すため逆順で並べる
                   return cell.stack
                     .map((s, i) => ({ s, lit: marks[`${rowId}:${col.key}:${i}`], outline: false }))
-                    .filter((x) => x.lit);
+                    .filter((x) => x.lit)
+                    .reverse();
                 }
                 return [{ s: { action: cell.action, tone: cell.tone }, lit: true, outline: !!cell.outline }];
               });
@@ -771,8 +773,9 @@ export default function Home() {
                   >
                     {result ? (
                       result.stack ? (
-                        // 縦積み：上=加速(個人ギミック・緑)、下=雷水(常表示・青赤・クリック連動)
-                        <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-[3px]">
+                        // 縦積み：上=雷水(常表示・青赤・クリック連動)、下=加速(個人ギミック・緑)
+                        // stack順は [加速(i=0), 雷水(i=1)] のままで、表示だけ reverse で雷水を上に。
+                        <div className="flex min-h-0 flex-1 flex-col-reverse items-stretch justify-center gap-[3px]">
                           {result.stack.map((s, i) => {
                             const isRaisui = i === 1; // i=1 が 雷/水さんかい
                             // 加速(i=0)は個人ギミックOFFで隠す。雷水は常に表示。
