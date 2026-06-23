@@ -76,7 +76,24 @@ export function useShareConnection(
       };
     };
 
-    // タブ/ネットワーク復帰時に即再接続を試みる
+    // keepalive: 何も操作しなくても定期的に ping を送り、部屋を生存扱いにする。
+    // pong(POST応答)が来なければ接続不良とみなして再接続を促す。
+    const sendPing = () => {
+      if (stopped) return;
+      // タブが裏のときは送らない（表示復帰時に送る）
+      if (document.visibilityState === "hidden") return;
+      fetch(`/api/share/${encodeURIComponent(code)}/ping`, { method: "POST", keepalive: true })
+        .then((r) => {
+          if (!r.ok) throw new Error("ping failed");
+        })
+        .catch(() => {
+          // ping 失敗＝サーバー到達不可。SSE も切れている可能性が高いので再接続を促す。
+          if (!es || es.readyState !== EventSource.OPEN) kick();
+        });
+    };
+    const pingTimer = setInterval(sendPing, 20000);
+
+    // タブ/ネットワーク復帰時に即再接続＋ping を試みる
     const kick = () => {
       if (stopped) return;
       if (!es || es.readyState === EventSource.CLOSED) {
@@ -86,16 +103,21 @@ export function useShareConnection(
       }
     };
     const onVisible = () => {
-      if (document.visibilityState === "visible") kick();
+      if (document.visibilityState === "visible") {
+        kick();
+        sendPing();
+      }
     };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("online", kick);
 
     connect();
+    sendPing(); // 開いた直後に1回
 
     return () => {
       stopped = true;
       clearRetry();
+      clearInterval(pingTimer);
       es?.close();
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", kick);
