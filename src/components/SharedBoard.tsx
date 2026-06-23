@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import Board from "@/components/Board";
 import { type BoardState, INITIAL_BOARD_STATE } from "@/lib/boardState";
+import { useShareConnection } from "@/lib/useShareConnection";
 
 // クライアント識別子（自分が送った更新のエコーバックを無視するため）。
 function makeClientId(): string {
@@ -13,47 +14,20 @@ function makeClientId(): string {
 
 export default function SharedBoard({ code }: { code: string }) {
   const [state, setState] = useState<BoardState>(INITIAL_BOARD_STATE);
-  const [connected, setConnected] = useState(false);
   const clientIdRef = useRef<string>("");
-  // 自分が送った更新の rev を覚えておき、エコー判定に使う。
-  const lastSentRevRef = useRef<number>(-1);
   // 受理済みの最新 rev。古い更新で巻き戻らないようにする。
   const appliedRevRef = useRef<number>(-1);
+  // 復帰時の再送に使うため、最新のローカル状態を ref に保持。
+  const stateRef = useRef<BoardState>(state);
+  // 一度でもローカルで操作したか（操作前は復帰再送しない）。
+  const dirtyRef = useRef<boolean>(false);
 
   if (!clientIdRef.current) clientIdRef.current = makeClientId();
+  stateRef.current = state;
 
-  // SSE 購読：サーバーからの状態更新を受けて反映する。
-  useEffect(() => {
-    const es = new EventSource(`/api/share/${encodeURIComponent(code)}/stream`);
-    es.onopen = () => setConnected(true);
-    es.onerror = () => setConnected(false);
-    es.onmessage = (ev) => {
-      try {
-        const payload = JSON.parse(ev.data) as {
-          state: BoardState;
-          rev: number;
-          origin: string | null;
-        };
-        // 自分が送った更新のエコーは無視（ローカルが既に最新）。
-        if (payload.origin && payload.origin === clientIdRef.current) {
-          appliedRevRef.current = Math.max(appliedRevRef.current, payload.rev);
-          return;
-        }
-        // 古い更新は適用しない。
-        if (payload.rev < appliedRevRef.current) return;
-        appliedRevRef.current = payload.rev;
-        setState(payload.state);
-      } catch {
-        // ignore malformed
-      }
-    };
-    return () => es.close();
-  }, [code]);
-
-  // ローカル変更：即座に画面反映しつつ、サーバーへ POST して全員に配信。
-  const onChange = useCallback(
+  // サーバーへ状態を送信（POST）。成功で rev を更新。
+  const postState = useCallback(
     (next: BoardState) => {
-      setState(next);
       void fetch(`/api/share/${encodeURIComponent(code)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -61,16 +35,42 @@ export default function SharedBoard({ code }: { code: string }) {
       })
         .then((r) => (r.ok ? r.json() : null))
         .then((res: { rev: number } | null) => {
-          if (res) {
-            lastSentRevRef.current = res.rev;
-            appliedRevRef.current = Math.max(appliedRevRef.current, res.rev);
-          }
+          if (res) appliedRevRef.current = Math.max(appliedRevRef.current, res.rev);
         })
         .catch(() => {
-          // 送信失敗は握りつぶす（次の操作でまた送る）
+          // 送信失敗は握りつぶす（復帰時に再送される）
         });
     },
     [code],
+  );
+
+  const { connected } = useShareConnection(code, {
+    onMessage: (payload) => {
+      // 自分が送った更新のエコーは無視（ローカルが既に最新）。
+      if (payload.origin && payload.origin === clientIdRef.current) {
+        appliedRevRef.current = Math.max(appliedRevRef.current, payload.rev);
+        return;
+      }
+      // 古い更新は適用しない。
+      if (payload.rev < appliedRevRef.current) return;
+      appliedRevRef.current = payload.rev;
+      setState(payload.state);
+    },
+    // 復帰処理：再接続できたらローカルの最新状態をサーバーへ再送（再更新）。
+    // サーバー再起動等で状態が失われていても、操作側の状態で復元できる。
+    onReconnect: () => {
+      if (dirtyRef.current) postState(stateRef.current);
+    },
+  });
+
+  // ローカル変更：即座に画面反映しつつ、サーバーへ POST して全員に配信。
+  const onChange = useCallback(
+    (next: BoardState) => {
+      dirtyRef.current = true;
+      setState(next);
+      postState(next);
+    },
+    [postState],
   );
 
   return <Board state={state} onChange={onChange} shareInfo={{ code, connected }} />;
