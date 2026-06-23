@@ -466,6 +466,29 @@ export default function Home() {
   // タイムライン列はすべて等幅（narrow 指定は無視）。
   const gridTemplate = `2.8rem ${visibleColumns.map(() => "1fr").join(" ")}`;
 
+  // 表示中の行（⚡🧊トグル反映）
+  const visibleRows = ROWS.filter((row) => showCharge || !row.id.startsWith("charge-"));
+
+  // ある行の「いま有効な選択結果」を返す（ミラー連動も考慮）。未選択なら null。
+  const activeResultOf = (row: Row): Option | null => {
+    const activeKey = selections[row.id] ?? null;
+    let opts = row.options;
+    if (row.mirrorOf) {
+      const srcKey = selections[row.mirrorOf] ?? null;
+      const srcKind = srcKey ? elementKind(srcKey) : null;
+      if (!srcKind) return null;
+      const wantKind = srcKind === "fire" ? "tsunami" : "fire";
+      opts = row.options.filter((o) => elementKind(o.key) === wantKind);
+    }
+    return opts.find((o) => o.key === activeKey) ?? null;
+  };
+
+  // 「最終結果」行：各結果列について、選択済み行の結果セルを集約する。
+  const summaryByCol = (col: ResultColKey): ResultCell[] =>
+    visibleRows
+      .map((row) => activeResultOf(row)?.results[col] ?? null)
+      .filter((r): r is ResultCell => r !== null);
+
   return (
     <>
       {/* ヘッダー：本文(4dvh)に引きずられないよう 2dvh 基準。子は em で追従 */}
@@ -608,8 +631,53 @@ export default function Home() {
           ))}
         </div>
 
+        {/* 最終結果行（結果タイムラインONのとき、GC1の上に集約表示） */}
+        {showTimeline && (
+          <div
+            className="grid min-h-0 flex-1 gap-[3px] rounded border border-[#ffcc00] bg-[rgba(255,204,0,0.06)]"
+            style={{ gridTemplateColumns: gridTemplate }}
+          >
+            <div
+              className="flex items-center justify-center border-l-2 border-[#ffcc00] px-px text-center font-bold leading-[1.1] text-[#ffcc00]"
+              style={{ fontSize: "min(1.5dvh, 11px)" }}
+            >
+              最終結果
+            </div>
+            {resultCols.map((col) => {
+              const cells = summaryByCol(col.key);
+              return (
+                <div
+                  key={col.key}
+                  className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]"
+                >
+                  {cells.length === 0 ? (
+                    <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.7rem] text-[#3a3a3a]">
+                      ·
+                    </div>
+                  ) : (
+                    <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-[3px]">
+                      {cells.flatMap((cell, ci) =>
+                        (cell.stack ?? [{ action: cell.action, tone: cell.tone }]).map((s, si) => (
+                          <div
+                            key={`${ci}:${si}`}
+                            className={`${linkedResultBase} ${
+                              cell.outline && !cell.stack ? outlineClass[s.tone] : toneClass[s.tone]
+                            }`}
+                          >
+                            {s.action}
+                          </div>
+                        )),
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {/* 縦軸＝判断していく行（⚡🧊行はトグルOFFで隠す） */}
-        {ROWS.filter((row) => showCharge || !row.id.startsWith("charge-")).map((row, rowIndex) => {
+        {visibleRows.map((row, rowIndex) => {
           const activeKey = selections[row.id] ?? null;
           const zebra = rowIndex % 2 === 0 ? "bg-[#1c1c1c]" : "bg-black";
 
@@ -692,10 +760,7 @@ export default function Home() {
                     key={col.key}
                     className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]"
                   >
-                    {!showTimeline ? (
-                      // 結果タイムラインOFF：結果セルの中身だけ隠す（列・枠は残す）
-                      <div className="min-h-0 flex-1" />
-                    ) : result ? (
+                    {result ? (
                       result.stack ? (
                         // 縦積み：上=加速(個人ギミック・緑)、下=雷水(常表示・青赤・クリック連動)
                         <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-[3px]">
