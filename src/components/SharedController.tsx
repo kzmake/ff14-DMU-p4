@@ -100,8 +100,6 @@ export default function SharedController({ code }: { code: string }) {
     commit({ ...state, marks, dimmedMarks });
   };
 
-  const resetAll = () => commit({ ...state, selections: {}, marks: {}, dimmedMarks: {} });
-
   const visibleRows = ROWS.filter((row) => state.showCharge || !row.id.startsWith("charge-"));
 
   // 行の有効な選択結果（ミラー連動考慮）
@@ -119,27 +117,12 @@ export default function SharedController({ code }: { code: string }) {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-[640px] flex-col gap-3 p-2">
-      <div className="flex shrink-0 items-center justify-between border-b-2 border-[#ffcc00] pb-2">
-        <div className="text-lg font-bold text-[#ffcc00]">🎮 操作リモコン</div>
-        <div className="flex items-center gap-2">
-          <span
-            className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs font-bold ${
-              connected
-                ? "border-[#3fbf6f] bg-[rgba(63,191,111,0.15)] text-[#8fe6ad]"
-                : "border-[#888] bg-[rgba(255,255,255,0.06)] text-[#aaa]"
-            }`}
-          >
-            {connected ? "🟢" : "⚪"} {code}
-          </span>
-          <button
-            type="button"
-            className="cursor-pointer rounded border-none bg-[#ff3333] px-3 py-1 text-xs font-bold text-white"
-            onClick={resetAll}
-          >
-            リセット
-          </button>
-        </div>
+    <div className="flex w-full flex-col gap-3 p-1">
+      {/* 接続インジケータだけ（ヘッダー・リセットは無し） */}
+      <div className="flex items-center justify-end">
+        <span title={connected ? "同期中" : "未接続"} className="text-sm">
+          {connected ? "🟢" : "⚪"}
+        </span>
       </div>
 
       {visibleRows.map((row) => {
@@ -161,75 +144,81 @@ export default function SharedController({ code }: { code: string }) {
         const isGc = row.id === "gc1" || row.id === "gc2";
 
         return (
-          <div key={row.id} className="rounded-lg border border-[#333] bg-[#1a1a1a] p-2">
-            <div className="mb-2 text-sm font-bold text-[#ffcc00]">{row.name}</div>
+          <div key={row.id} className="flex items-stretch gap-2">
+            {/* 行ラベル（最小幅・縦中央） */}
+            <div className="flex w-10 shrink-0 items-center justify-center text-lg font-bold text-[#ffcc00]">
+              {row.name}
+            </div>
 
-            {/* 選択ボタン */}
-            {mirrorWaiting ? (
-              <div className="py-3 text-center text-sm text-[#777]">↑前の行を選択してください</div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {opts.map((opt) => {
-                  const isActive = activeKey === opt.key;
-                  return (
-                    <button
-                      key={opt.key}
-                      type="button"
-                      className={`min-h-[52px] cursor-pointer rounded-md border-2 text-base font-bold ${
-                        isActive ? toneClass[opt.tone] : "border-[#444] bg-[#222] text-[#ccc]"
-                      }`}
-                      onClick={() => setSelect(row.id, opt.key)}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              {/* 選択ボタン */}
+              {mirrorWaiting ? (
+                <div className="flex min-h-[80px] items-center justify-center text-center text-base text-[#777]">
+                  ↑前の行を選択
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {opts.map((opt) => {
+                    const isActive = activeKey === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        className={`min-h-[80px] cursor-pointer rounded-lg border-2 text-2xl font-bold ${
+                          isActive ? toneClass[opt.tone] : "border-[#444] bg-[#222] text-[#ccc]"
+                        }`}
+                        onClick={() => setSelect(row.id, opt.key)}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-            {/* GC行：雷水/加速マーカーボタン（選択後のみ） */}
-            {isGc && activeOption && (
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {ACCEL_COLS.map(({ col, label }) => {
-                  const cell = activeOption.results[col as keyof typeof activeOption.results];
-                  if (!cell?.stack) return <div key={col} />;
-                  // stack: [加速(i=0), 雷水(i=1)] → 雷水を上に
-                  return (
-                    <div key={col} className="flex flex-col gap-1">
-                      <div className="text-center text-[10px] font-bold text-[#888]">{label}</div>
-                      {[1, 0].map((i) => {
-                        const s = cell.stack?.[i];
-                        if (!s) return null;
-                        const id = `${row.id}:${col}:${i}`;
-                        const lit = state.marks[id];
-                        const dimmed = state.dimmedMarks[id] && !lit;
-                        const isRaisui = i === 1;
-                        return (
-                          <button
-                            key={id}
-                            type="button"
-                            className={`min-h-[44px] cursor-pointer rounded-md border-2 text-sm font-bold ${
-                              dimmed
-                                ? "border-[#555] bg-[rgba(255,255,255,0.03)] text-[#777] opacity-60"
-                                : lit
-                                  ? isRaisui
-                                    ? toneClass[s.tone]
-                                    : "border-[#3fbf6f] bg-[#3fbf6f] text-white"
-                                  : isRaisui
-                                    ? `bg-transparent ${outlineTone[s.tone]}`
-                                    : "border-[#3fbf6f] bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
-                            }`}
-                            onClick={() => toggleMark(id)}
-                          >
-                            {s.action}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+              {/* GC行：雷水/加速マーカーボタン（選択後のみ） */}
+              {isGc && activeOption && (
+                <div className="grid grid-cols-2 gap-2">
+                  {ACCEL_COLS.map(({ col }) => {
+                    const cell = activeOption.results[col as keyof typeof activeOption.results];
+                    if (!cell?.stack) return <div key={col} />;
+                    // stack: [加速(i=0), 雷水(i=1)] → 雷水を上に
+                    return (
+                      <div key={col} className="flex flex-col gap-2">
+                        {[1, 0].map((i) => {
+                          const s = cell.stack?.[i];
+                          if (!s) return null;
+                          const id = `${row.id}:${col}:${i}`;
+                          const lit = state.marks[id];
+                          const dimmed = state.dimmedMarks[id] && !lit;
+                          const isRaisui = i === 1;
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              className={`min-h-[64px] cursor-pointer rounded-lg border-2 text-xl font-bold ${
+                                dimmed
+                                  ? "border-[#555] bg-[rgba(255,255,255,0.03)] text-[#777] opacity-60"
+                                  : lit
+                                    ? isRaisui
+                                      ? toneClass[s.tone]
+                                      : "border-[#3fbf6f] bg-[#3fbf6f] text-white"
+                                    : isRaisui
+                                      ? `bg-transparent ${outlineTone[s.tone]}`
+                                      : "border-[#3fbf6f] bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
+                              }`}
+                              onClick={() => toggleMark(id)}
+                            >
+                              {s.action}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         );
       })}
