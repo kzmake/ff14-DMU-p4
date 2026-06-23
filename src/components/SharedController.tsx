@@ -175,44 +175,33 @@ export default function SharedController({ code }: { code: string }) {
                 </div>
               )}
 
-              {/* GC行：雷水/加速マーカーボタン（選択後のみ） */}
+              {/* GC行：早・遅 の雷水ボタン（選択後のみ。個人ギミック=加速は一旦なし） */}
               {isGc && activeOption && (
                 <div className="grid grid-cols-2 gap-2">
-                  {ACCEL_COLS.map(({ col }) => {
+                  {ACCEL_COLS.map(({ col, label }) => {
                     const cell = activeOption.results[col as keyof typeof activeOption.results];
-                    if (!cell?.stack) return <div key={col} />;
-                    // stack: [加速(i=0), 雷水(i=1)] → 雷水を上に
+                    // stack: [加速(i=0), 雷水(i=1)] のうち雷水(i=1)だけ使う
+                    const s = cell?.stack?.[1];
+                    if (!s) return <div key={col} />;
+                    const id = `${row.id}:${col}:1`;
+                    const lit = state.marks[id];
+                    const dimmed = state.dimmedMarks[id] && !lit;
                     return (
-                      <div key={col} className="flex flex-col gap-2">
-                        {[1, 0].map((i) => {
-                          const s = cell.stack?.[i];
-                          if (!s) return null;
-                          const id = `${row.id}:${col}:${i}`;
-                          const lit = state.marks[id];
-                          const dimmed = state.dimmedMarks[id] && !lit;
-                          const isRaisui = i === 1;
-                          return (
-                            <button
-                              key={id}
-                              type="button"
-                              className={`min-h-[64px] cursor-pointer rounded-lg border-2 text-xl font-bold ${
-                                dimmed
-                                  ? "border-[#555] bg-[rgba(255,255,255,0.03)] text-[#777] opacity-60"
-                                  : lit
-                                    ? isRaisui
-                                      ? toneClass[s.tone]
-                                      : "border-[#3fbf6f] bg-[#3fbf6f] text-white"
-                                    : isRaisui
-                                      ? `bg-transparent ${outlineTone[s.tone]}`
-                                      : "border-[#3fbf6f] bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
-                              }`}
-                              onClick={() => toggleMark(id)}
-                            >
-                              {s.action}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      <button
+                        key={col}
+                        type="button"
+                        className={`flex min-h-[72px] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border-2 font-bold ${
+                          dimmed
+                            ? "border-[#555] bg-[rgba(255,255,255,0.03)] text-[#777] opacity-60"
+                            : lit
+                              ? toneClass[s.tone]
+                              : `bg-transparent ${outlineTone[s.tone]}`
+                        }`}
+                        onClick={() => toggleMark(id)}
+                      >
+                        <span className="text-xs opacity-80">{label}</span>
+                        <span className="text-xl">{s.action}</span>
+                      </button>
                     );
                   })}
                 </div>
