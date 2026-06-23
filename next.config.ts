@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
-    port: 8080,
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;
