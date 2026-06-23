@@ -73,7 +73,7 @@ const ROWS: Row[] = [
             tone: "green",
             stack: [
               { action: "動かない", tone: "green" },
-              { action: "雷さんかい", tone: "green" },
+              { action: "雷さんかい", tone: "blue" },
             ],
           },
           "e-look": { action: "見ない", tone: "blue" },
@@ -83,7 +83,7 @@ const ROWS: Row[] = [
             tone: "green",
             stack: [
               { action: "動かない", tone: "green" },
-              { action: "雷さんかい", tone: "green" },
+              { action: "雷さんかい", tone: "blue" },
             ],
           },
         },
@@ -98,7 +98,7 @@ const ROWS: Row[] = [
             tone: "green",
             stack: [
               { action: "動く", tone: "green" },
-              { action: "水さんかい", tone: "green" },
+              { action: "水さんかい", tone: "red" },
             ],
           },
           "e-look": { action: "見る", tone: "red", outline: true },
@@ -107,7 +107,7 @@ const ROWS: Row[] = [
             tone: "green",
             stack: [
               { action: "動く", tone: "green" },
-              { action: "水さんかい", tone: "green" },
+              { action: "水さんかい", tone: "red" },
             ],
           },
         },
@@ -148,7 +148,7 @@ const ROWS: Row[] = [
             tone: "green",
             stack: [
               { action: "動かない", tone: "green" },
-              { action: "雷さんかい", tone: "green" },
+              { action: "雷さんかい", tone: "blue" },
             ],
           },
           "l-accel": {
@@ -156,7 +156,7 @@ const ROWS: Row[] = [
             tone: "green",
             stack: [
               { action: "動かない", tone: "green" },
-              { action: "雷さんかい", tone: "green" },
+              { action: "雷さんかい", tone: "blue" },
             ],
           },
           "l-look": { action: "見ない", tone: "blue" },
@@ -172,7 +172,7 @@ const ROWS: Row[] = [
             tone: "green",
             stack: [
               { action: "動く", tone: "green" },
-              { action: "水さんかい", tone: "green" },
+              { action: "水さんかい", tone: "red" },
             ],
           },
           "l-accel": {
@@ -180,7 +180,7 @@ const ROWS: Row[] = [
             tone: "green",
             stack: [
               { action: "動く", tone: "green" },
-              { action: "水さんかい", tone: "green" },
+              { action: "水さんかい", tone: "red" },
             ],
           },
           "l-look": { action: "見る", tone: "red", outline: true },
@@ -414,8 +414,9 @@ export default function Home() {
     setDimmedMarks({});
   };
 
-  // トグルOFFのとき個人ギミック列を隠す
-  const visibleColumns = COLUMNS.filter((c) => showPersonal || !("personal" in c && c.personal));
+  // 加速列(e-accel/l-accel)は雷水を常に出すため列ごとは隠さない。
+  // 個人ギミックOFFのときは列内の「加速(動く/動かない)」サブセルだけを隠す。
+  const visibleColumns = COLUMNS;
   const resultCols = visibleColumns.filter((c) => c.key !== "boss") as readonly {
     key: ResultColKey;
     label: string;
@@ -647,12 +648,35 @@ export default function Home() {
                   >
                     {result ? (
                       result.stack ? (
-                        // 1セルに複数結果を縦積み（例：加速＋雷水）。各々タップで点灯
+                        // 縦積み：上=加速(個人ギミック・緑)、下=雷水(常表示・青赤・クリック連動)
                         <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-[3px]">
                           {result.stack.map((s, i) => {
+                            const isRaisui = i === 1; // i=1 が 雷/水さんかい
+                            // 加速(i=0)は個人ギミックOFFで隠す。雷水は常に表示。
+                            if (!isRaisui && !showPersonal) return null;
                             const subId = `${markId}:${i}`;
                             const subLit = marks[subId];
                             const subDimmed = dimmedMarks[subId] && !subLit;
+                            if (isRaisui) {
+                              // 雷水：青(雷)/赤(水)。点灯で塗り、未点灯は枠線のみ、薄表示はグレー。
+                              return (
+                                <button
+                                  key={subId}
+                                  type="button"
+                                  className={`${linkedResultBase} w-full cursor-pointer border-2 font-[inherit] ${
+                                    subDimmed
+                                      ? "border-[#555] bg-[rgba(255,255,255,0.03)] text-[#777] opacity-60"
+                                      : subLit
+                                        ? toneClass[s.tone]
+                                        : outlineClass[s.tone]
+                                  }`}
+                                  onClick={() => toggleMark(row.id, subId)}
+                                >
+                                  {s.action}
+                                </button>
+                              );
+                            }
+                            // 加速：緑の個人ギミックマーカー
                             return (
                               <button
                                 key={subId}
