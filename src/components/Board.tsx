@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { type BoardState, INITIAL_BOARD_STATE } from "@/lib/boardState";
+import { applyMarkToggle } from "@/lib/marks";
 
 export { type BoardState, INITIAL_BOARD_STATE };
 
@@ -16,7 +17,7 @@ declare global {
   }
 }
 
-type Tone = "blue" | "red" | "thunder" | "ice" | "both" | "safe" | "green";
+export type Tone = "blue" | "red" | "thunder" | "ice" | "both" | "safe" | "green";
 
 // 横＝列（画像準拠）。先頭の本体列が操作、右側は表示専用。
 // personal: 個人ギミック（自分の早/遅デバフ依存）。トグルで非表示にできる。
@@ -50,7 +51,7 @@ type ResultCell = {
 };
 
 // 本体列のボタン1つ。押すと results の各列に結果が表示される。
-type Option = {
+export type Option = {
   key: string;
   label: string;
   tone: Tone;
@@ -58,7 +59,7 @@ type Option = {
 };
 
 // 縦＝判断していく行
-type Row = {
+export type Row = {
   id: string;
   name: string;
   cols: number; // 本体列ボタンのグリッド列数
@@ -68,10 +69,10 @@ type Row = {
 };
 
 // option.key から種別（fire / tsunami）を取り出す
-const elementKind = (optionKey: string): "fire" | "tsunami" | null =>
+export const elementKind = (optionKey: string): "fire" | "tsunami" | null =>
   optionKey.startsWith("fire") ? "fire" : optionKey.startsWith("tsunami") ? "tsunami" : null;
 
-const ROWS: Row[] = [
+export const ROWS: Row[] = [
   {
     id: "gc1",
     name: "GC1",
@@ -262,7 +263,7 @@ const ROWS: Row[] = [
 ];
 
 // 選択中ボタン・結果セルの塗りつぶし配色（Tailwind 任意値で元の色を維持）
-const toneClass: Record<Tone, string> = {
+export const toneClass: Record<Tone, string> = {
   blue: "bg-[#4dadff] text-white border-[#3399ff]",
   red: "bg-[#ff4d4d] text-white border-[#ff3333]",
   thunder: "bg-[#a64dff] text-white border-[#8a2be2]",
@@ -557,77 +558,9 @@ export default function Board({
     setPipContainer(container);
   };
 
-  // マーカーのキー: "<gc1|gc2>:<e|l>-accel:<0=加速|1=雷水>"
-  // 加速マーカー（GC1/GC2の早/遅 計4つ）のキー一覧
-  const ACCEL_KEYS = ["gc1:e-accel:0", "gc1:l-accel:0", "gc2:e-accel:0", "gc2:l-accel:0"];
-
-  // 雷水(⚡💧)マーカーのキーから、GC1↔GC2・早↔遅 を逆にした相手キーを返す。
-  // 雷水でなければ null。例: gc1:e-accel:1 → gc2:l-accel:1
-  const raisuiPartner = (id: string): string | null => {
-    const m = /^(gc1|gc2):(e|l)-accel:1$/.exec(id);
-    if (!m) return null;
-    const otherRow = m[1] === "gc1" ? "gc2" : "gc1";
-    const otherCol = m[2] === "e" ? "l" : "e";
-    return `${otherRow}:${otherCol}-accel:1`;
-  };
-
-  // 雷水マーカーのキーから、同じGC行内の反対側（早↔遅）の雷水キーを返す。
-  // 雷水でなければ null。例: gc1:e-accel:1 → gc1:l-accel:1
-  const raisuiSameRow = (id: string): string | null => {
-    const m = /^(gc1|gc2):(e|l)-accel:1$/.exec(id);
-    if (!m) return null;
-    const otherCol = m[2] === "e" ? "l" : "e";
-    return `${m[1]}:${otherCol}-accel:1`;
-  };
-
-  // 雷水マーカーのキーから、別GCの同じ早/遅 の雷水キーを返す。
-  // 雷水でなければ null。例: gc1:e-accel:1 → gc2:e-accel:1
-  const raisuiOtherGc = (id: string): string | null => {
-    const m = /^(gc1|gc2):(e|l)-accel:1$/.exec(id);
-    if (!m) return null;
-    const otherRow = m[1] === "gc1" ? "gc2" : "gc1";
-    return `${otherRow}:${m[2]}-accel:1`;
-  };
-
-  // 緑マーカーの点灯ルール（要素ごとに独立）
-  //  - 加速(:0)  : GC1/GC2 合わせて1つだけ点灯。残り3つは薄表示（クリックで移せる）。
-  //  - 雷水(:1)  : 押すと自分＋対角(GC・早遅とも逆)を点灯し、同行・同列は薄表示にする。
+  // 雷水/加速マーカーのトグル（ロジックは @/lib/marks に集約。Controller と共有）
   const toggleMark = (id: string) => {
-    const wasLit = marks[id];
-    const isAccel = id.endsWith(":0");
-    const partner = raisuiPartner(id);
-    const sameRow = raisuiSameRow(id);
-    const otherGc = raisuiOtherGc(id);
-
-    const nextMarks: Record<string, boolean> = { ...marks };
-    if (isAccel) {
-      // 加速：4つを全消ししてから対象だけ点灯（点灯中を再押下なら消灯）
-      for (const k of ACCEL_KEYS) nextMarks[k] = false;
-      if (!wasLit) nextMarks[id] = true;
-    } else if (!wasLit) {
-      // 雷水：自分＋対角を点灯。同行・同列は消灯（薄表示にまわす）。
-      nextMarks[id] = true;
-      if (partner) nextMarks[partner] = true;
-      if (sameRow) nextMarks[sameRow] = false;
-      if (otherGc) nextMarks[otherGc] = false;
-    } else {
-      // 再押下で消灯：自分＋対角をまとめて消灯
-      nextMarks[id] = false;
-      if (partner) nextMarks[partner] = false;
-    }
-
-    const nextDimmed: Record<string, boolean> = { ...dimmedMarks };
-    if (isAccel) {
-      // 加速：点灯時はクリックしたもの以外を薄表示。再押下で消灯なら全解除。
-      for (const k of ACCEL_KEYS) nextDimmed[k] = !wasLit && k !== id;
-    } else {
-      // 雷水：同行・同列をグレーで薄く表示（クリック可・再押下で解除）。
-      // 自分自身が薄表示中にクリックされたら、その薄表示は解除する。
-      nextDimmed[id] = false;
-      if (sameRow) nextDimmed[sameRow] = !wasLit;
-      if (otherGc) nextDimmed[otherGc] = !wasLit;
-    }
-
+    const { marks: nextMarks, dimmedMarks: nextDimmed } = applyMarkToggle(state, id);
     onChange({ ...state, marks: nextMarks, dimmedMarks: nextDimmed });
   };
 
