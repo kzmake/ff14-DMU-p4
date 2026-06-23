@@ -483,11 +483,14 @@ export default function Home() {
     return opts.find((o) => o.key === activeKey) ?? null;
   };
 
-  // 「最終結果」行：各結果列について、選択済み行の結果セルを集約する。
-  const summaryByCol = (col: ResultColKey): ResultCell[] =>
+  // 「最終結果」行：各結果列について、選択済み行の結果セル（行ID付き）を集約する。
+  const summaryByCol = (col: ResultColKey): { rowId: string; cell: ResultCell }[] =>
     visibleRows
-      .map((row) => activeResultOf(row)?.results[col] ?? null)
-      .filter((r): r is ResultCell => r !== null);
+      .map((row) => {
+        const cell = activeResultOf(row)?.results[col] ?? null;
+        return cell ? { rowId: row.id, cell } : null;
+      })
+      .filter((x): x is { rowId: string; cell: ResultCell } => x !== null);
 
   return (
     <>
@@ -644,30 +647,34 @@ export default function Home() {
               最終結果
             </div>
             {resultCols.map((col) => {
-              const cells = summaryByCol(col.key);
+              // 集約：stack（加速/雷水）は点灯したものだけ。それ以外はそのまま。
+              const items = summaryByCol(col.key).flatMap(({ rowId, cell }) => {
+                if (cell.stack) {
+                  return cell.stack
+                    .map((s, i) => ({ s, lit: marks[`${rowId}:${col.key}:${i}`], outline: false }))
+                    .filter((x) => x.lit);
+                }
+                return [{ s: { action: cell.action, tone: cell.tone }, lit: true, outline: !!cell.outline }];
+              });
               return (
                 <div
                   key={col.key}
                   className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]"
                 >
-                  {cells.length === 0 ? (
+                  {items.length === 0 ? (
                     <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.7rem] text-[#3a3a3a]">
                       ·
                     </div>
                   ) : (
                     <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-[3px]">
-                      {cells.flatMap((cell, ci) =>
-                        (cell.stack ?? [{ action: cell.action, tone: cell.tone }]).map((s, si) => (
-                          <div
-                            key={`${ci}:${si}`}
-                            className={`${linkedResultBase} ${
-                              cell.outline && !cell.stack ? outlineClass[s.tone] : toneClass[s.tone]
-                            }`}
-                          >
-                            {s.action}
-                          </div>
-                        )),
-                      )}
+                      {items.map(({ s, outline }, i) => (
+                        <div
+                          key={i}
+                          className={`${linkedResultBase} ${outline ? outlineClass[s.tone] : toneClass[s.tone]}`}
+                        >
+                          {s.action}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
