@@ -355,7 +355,7 @@ export default function Home() {
   };
 
   // 緑マーカーの点灯ルール（要素ごとに独立）
-  //  - 加速(:0)  : GC1/GC2 合わせて1つだけ。後から押したものに移る。
+  //  - 加速(:0)  : GC1/GC2 合わせて1つだけ点灯。残り3つは薄表示（クリックで移せる）。
   //  - 雷水(:1)  : 押すと自分＋対角(GC・早遅とも逆)を点灯し、同行・同列は薄表示にする。
   const toggleMark = (_rowId: string, id: string) => {
     const wasLit = marks[id];
@@ -384,12 +384,18 @@ export default function Home() {
       return next;
     });
 
-    // 同行の反対雷水・別GCの同じ早/遅 をグレーで薄く表示（クリックは可能・再押下で解除）。
-    // 自分自身が薄表示中にクリックされたら、その薄表示は解除する。
     setDimmedMarks((prev) => {
-      const next = { ...prev, [id]: false };
-      if (sameRow) next[sameRow] = !wasLit;
-      if (otherGc) next[otherGc] = !wasLit;
+      const next = { ...prev };
+      if (isAccel) {
+        // 加速：点灯時はクリックしたもの以外を薄表示。再押下で消灯なら全解除。
+        for (const k of ACCEL_KEYS) next[k] = !wasLit && k !== id;
+      } else {
+        // 雷水：同行・同列をグレーで薄く表示（クリック可・再押下で解除）。
+        // 自分自身が薄表示中にクリックされたら、その薄表示は解除する。
+        next[id] = false;
+        if (sameRow) next[sameRow] = !wasLit;
+        if (otherGc) next[otherGc] = !wasLit;
+      }
       return next;
     });
   };
