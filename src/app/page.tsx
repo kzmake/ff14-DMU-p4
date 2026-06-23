@@ -295,9 +295,7 @@ export default function Home() {
   const [showPersonal, setShowPersonal] = useState(true);
   // 個人ギミックの「自分用マーカー」点灯（"rowId:colKey" -> bool）
   const [marks, setMarks] = useState<Record<string, boolean>>({});
-  // 同行の反対雷水を押せなくする（無効化）マーカー
-  const [disabledMarks, setDisabledMarks] = useState<Record<string, boolean>>({});
-  // 別GCの同じ早/遅 雷水をグレーで薄く表示するマーカー（クリックは可能）
+  // 雷水を押したとき、関連する雷水をグレーで薄く表示するマーカー（クリックは可能）
   const [dimmedMarks, setDimmedMarks] = useState<Record<string, boolean>>({});
   // フルスクリーン状態
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -385,15 +383,14 @@ export default function Home() {
       return next;
     });
 
-    // 同行の反対雷水を押せなくする（完全無効・再押下で解除）
-    if (sameRow) {
-      setDisabledMarks((prev) => ({ ...prev, [sameRow]: !wasLit }));
-    }
-    // 別GCの同じ早/遅 をグレーで薄く表示（クリックは可能・再押下で解除）。
+    // 同行の反対雷水・別GCの同じ早/遅 をグレーで薄く表示（クリックは可能・再押下で解除）。
     // 自分自身が薄表示中にクリックされたら、その薄表示は解除する。
-    if (otherGc) {
-      setDimmedMarks((prev) => ({ ...prev, [otherGc]: !wasLit, [id]: false }));
-    }
+    setDimmedMarks((prev) => {
+      const next = { ...prev, [id]: false };
+      if (sameRow) next[sameRow] = !wasLit;
+      if (otherGc) next[otherGc] = !wasLit;
+      return next;
+    });
   };
 
   const setSelect = (rowId: string, optionKey: string) => {
@@ -407,7 +404,6 @@ export default function Home() {
   const resetAll = () => {
     setSelections({});
     setMarks({});
-    setDisabledMarks({});
     setDimmedMarks({});
   };
 
@@ -649,21 +645,17 @@ export default function Home() {
                           {result.stack.map((s, i) => {
                             const subId = `${markId}:${i}`;
                             const subLit = marks[subId];
-                            const subDisabled = disabledMarks[subId];
                             const subDimmed = dimmedMarks[subId] && !subLit;
                             return (
                               <button
                                 key={subId}
                                 type="button"
-                                disabled={subDisabled}
-                                className={`${linkedResultBase} w-full border-2 border-[#3fbf6f] font-[inherit] ${
-                                  subDisabled
-                                    ? "cursor-not-allowed border-[#333] bg-[rgba(255,255,255,0.02)] text-[#444] opacity-40"
-                                    : subDimmed
-                                      ? "cursor-pointer border-[#555] bg-[rgba(255,255,255,0.03)] text-[#777] opacity-60"
-                                      : subLit
-                                        ? "cursor-pointer bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
-                                        : "cursor-pointer bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
+                                className={`${linkedResultBase} w-full cursor-pointer border-2 border-[#3fbf6f] font-[inherit] ${
+                                  subDimmed
+                                    ? "border-[#555] bg-[rgba(255,255,255,0.03)] text-[#777] opacity-60"
+                                    : subLit
+                                      ? "bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
+                                      : "bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
                                 }`}
                                 onClick={() => toggleMark(row.id, subId)}
                               >
