@@ -1,6 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+
+// Document Picture-in-Picture API（Chrome系のみ。型定義が無いので最小限で宣言）
+declare global {
+  interface Window {
+    documentPictureInPicture?: {
+      requestWindow: (opts?: { width?: number; height?: number }) => Promise<Window>;
+      window: Window | null;
+    };
+  }
+}
 
 type Tone = "blue" | "red" | "thunder" | "ice" | "both" | "safe" | "green";
 
@@ -341,6 +352,8 @@ export default function Home() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   // フォントサイズ（大中小）。既定は大。
   const [fontSize, setFontSize] = useState<FontSize>("large");
+  // Document PiP（最終結果を最前面の小窓に出す）。開いている間だけ container を保持。
+  const [pipContainer, setPipContainer] = useState<HTMLElement | null>(null);
 
   // 選択したフォントサイズを html の --font-scale に反映
   useEffect(() => {
@@ -360,6 +373,49 @@ export default function Home() {
     } else {
       document.documentElement.requestFullscreen?.();
     }
+  };
+
+  // 最終結果を Document PiP（常に最前面の小窓）で開く／閉じる
+  const togglePip = async () => {
+    const dpip = window.documentPictureInPicture;
+    if (!dpip) {
+      alert("この機能はDocument Picture-in-Picture対応ブラウザ（Chrome系）でのみ使えます。");
+      return;
+    }
+    if (dpip.window) {
+      dpip.window.close();
+      return;
+    }
+    const pip = await dpip.requestWindow({ width: 480, height: 160 });
+    // 親ページのスタイル（Tailwind等）を小窓へコピー
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        const css = Array.from(sheet.cssRules)
+          .map((r) => r.cssText)
+          .join("");
+        const style = pip.document.createElement("style");
+        style.textContent = css;
+        pip.document.head.appendChild(style);
+      } catch {
+        // CORS で読めない外部シートはリンクで取り込む
+        if (sheet.href) {
+          const link = pip.document.createElement("link");
+          link.rel = "stylesheet";
+          link.href = sheet.href;
+          pip.document.head.appendChild(link);
+        }
+      }
+    }
+    pip.document.documentElement.style.setProperty("--font-scale", String(FONT_SCALE[fontSize]));
+    pip.document.body.style.margin = "0";
+    pip.document.body.style.background = "#0f0f0f";
+    pip.document.body.style.padding = "6px";
+    const container = pip.document.createElement("div");
+    container.style.width = "100%";
+    container.style.height = "100%";
+    pip.document.body.appendChild(container);
+    pip.addEventListener("pagehide", () => setPipContainer(null));
+    setPipContainer(container);
   };
 
   // マーカーのキー: "<gc1|gc2>:<e|l>-accel:<0=加速|1=雷水>"
@@ -492,6 +548,79 @@ export default function Home() {
       })
       .filter((x): x is { rowId: string; cell: ResultCell } => x !== null);
 
+  // 最終結果セルに表示する項目（雷水を上・加速を下に並べ替え済み）
+  const summaryItems = (col: ResultColKey) => {
+    const raw = summaryByCol(col).flatMap(({ rowId, cell }) => {
+      if (cell.stack) {
+        // i=0=加速, i=1=雷水。点灯したものだけ、種別(rank)付きで返す。
+        return cell.stack
+          .map((s, i) => ({
+            s,
+            outline: false,
+            rank: i === 1 ? 0 : 1, // 雷水=0(上), 加速=1(下)
+            lit: marks[`${rowId}:${col}:${i}`],
+          }))
+          .filter((x) => x.lit);
+      }
+      return [{ s: { action: cell.action, tone: cell.tone }, outline: !!cell.outline, rank: 0 }];
+    });
+    return raw.slice().sort((a, b) => a.rank - b.rank);
+  };
+
+  // 最終結果グリッド（インライン表示・PiP小窓の両方で使う）
+  const summaryGrid = (variant: "inline" | "pip") => (
+    <div
+      className={
+        variant === "pip"
+          ? "grid h-full w-full gap-[3px]"
+          : "grid min-h-0 flex-1 gap-[3px] rounded border border-[#ffcc00] bg-[rgba(255,204,0,0.06)]"
+      }
+      style={{
+        gridTemplateColumns:
+          variant === "pip" ? `repeat(${resultCols.length}, 1fr)` : gridTemplate,
+      }}
+    >
+      {variant === "inline" && (
+        <>
+          <div
+            className="flex items-center justify-center border-l-2 border-[#ffcc00] px-px text-center font-bold leading-[1.1] text-[#ffcc00]"
+            style={{ fontSize: "min(1.5dvh, 11px)" }}
+          >
+            最終結果
+          </div>
+          {/* 本体（記憶）列は空白 */}
+          <div className="min-w-0 rounded" />
+        </>
+      )}
+      {resultCols.map((col) => {
+        const items = summaryItems(col.key);
+        return (
+          <div
+            key={col.key}
+            className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]"
+          >
+            {items.length === 0 ? (
+              <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.7rem] text-[#3a3a3a]">
+                ·
+              </div>
+            ) : (
+              <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-[3px]">
+                {items.map(({ s, outline }, i) => (
+                  <div
+                    key={i}
+                    className={`${linkedResultBase} ${outline ? outlineClass[s.tone] : toneClass[s.tone]}`}
+                  >
+                    {s.action}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <>
       {/* ヘッダー：本文(4dvh)に引きずられないよう 2dvh 基準。子は em で追従 */}
@@ -508,6 +637,19 @@ export default function Home() {
             title={isFullscreen ? "フルスクリーン解除" : "フルスクリーン"}
           >
             {isFullscreen ? "🗗" : "⛶"}
+          </button>
+          <button
+            type="button"
+            className={`inline-flex h-[1.6em] cursor-pointer items-center justify-center gap-[0.2em] rounded border px-[0.4em] text-[0.8em] font-bold leading-none ${
+              pipContainer
+                ? "border-[#ffcc00] bg-[#2a2a2a] text-[#ffcc00]"
+                : "border-[#555] bg-[#1c1c1c] text-[#ffcc00] hover:border-[#ffcc00] hover:bg-[#2a2a2a]"
+            }`}
+            onClick={togglePip}
+            aria-label="最終結果を別窓(最前面)で表示"
+            title="最終結果を別窓(最前面)で表示"
+          >
+            🪟 最終結果
           </button>
           <div className="text-[1.2em] font-bold text-[#ffcc00]">🤡 絶妖星乱舞 P4 真偽判定</div>
         </div>
@@ -635,63 +777,7 @@ export default function Home() {
         </div>
 
         {/* 最終結果行（結果タイムラインONのとき、GC1の上に集約表示） */}
-        {showTimeline && (
-          <div
-            className="grid min-h-0 flex-1 gap-[3px] rounded border border-[#ffcc00] bg-[rgba(255,204,0,0.06)]"
-            style={{ gridTemplateColumns: gridTemplate }}
-          >
-            <div
-              className="flex items-center justify-center border-l-2 border-[#ffcc00] px-px text-center font-bold leading-[1.1] text-[#ffcc00]"
-              style={{ fontSize: "min(1.5dvh, 11px)" }}
-            >
-              最終結果
-            </div>
-            {/* 本体（記憶）列は空白 */}
-            <div className="min-w-0 rounded" />
-            {resultCols.map((col) => {
-              // 集約：stack（加速/雷水）は点灯したものだけ。それ以外はそのまま。
-              const raw = summaryByCol(col.key).flatMap(({ rowId, cell }) => {
-                if (cell.stack) {
-                  // i=0=加速, i=1=雷水。点灯したものだけ、種別(rank)付きで返す。
-                  return cell.stack
-                    .map((s, i) => ({
-                      s,
-                      lit: marks[`${rowId}:${col.key}:${i}`],
-                      outline: false,
-                      rank: i === 1 ? 0 : 1, // 雷水=0(上), 加速=1(下)
-                    }))
-                    .filter((x) => x.lit);
-                }
-                return [{ s: { action: cell.action, tone: cell.tone }, lit: true, outline: !!cell.outline, rank: 0 }];
-              });
-              // 雷水(rank0)を上、加速(rank1)を下にまとめる
-              const items = raw.slice().sort((a, b) => a.rank - b.rank);
-              return (
-                <div
-                  key={col.key}
-                  className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]"
-                >
-                  {items.length === 0 ? (
-                    <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.7rem] text-[#3a3a3a]">
-                      ·
-                    </div>
-                  ) : (
-                    <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-[3px]">
-                      {items.map(({ s, outline }, i) => (
-                        <div
-                          key={i}
-                          className={`${linkedResultBase} ${outline ? outlineClass[s.tone] : toneClass[s.tone]}`}
-                        >
-                          {s.action}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {showTimeline && summaryGrid("inline")}
 
         {/* 縦軸＝判断していく行（⚡🧊行はトグルOFFで隠す） */}
         {visibleRows.map((row, rowIndex) => {
@@ -877,6 +963,9 @@ export default function Home() {
           );
         })}
       </div>
+
+      {/* Document PiP の小窓へ最終結果を描画（親stateと自動同期） */}
+      {pipContainer && createPortal(summaryGrid("pip"), pipContainer)}
     </>
   );
 }
