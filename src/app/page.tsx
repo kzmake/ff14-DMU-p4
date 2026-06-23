@@ -406,7 +406,16 @@ export default function Home() {
         }
       }
     }
-    pip.document.documentElement.style.setProperty("--font-scale", String(FONT_SCALE[fontSize]));
+    // 小窓は dvh が極小（高さ160px）になり文字が潰れるので、root font-size を
+    // 小窓の高さ基準のpx固定にする（rem系のセル文字が大きく表示される）。
+    const applyPipFont = () => {
+      const h = pip.innerHeight || 160;
+      // 高さに比例（おおむね本体の見やすさに合わせた係数）。下限14px。
+      const px = Math.max(14, Math.round(h * 0.16));
+      pip.document.documentElement.style.fontSize = `${px}px`;
+    };
+    applyPipFont();
+    pip.addEventListener("resize", applyPipFont);
     pip.document.body.style.margin = "0";
     pip.document.body.style.background = "#0f0f0f";
     pip.document.body.style.padding = "6px";
