@@ -302,6 +302,132 @@ const FONT_OPTIONS: { key: FontSize; label: string }[] = [
 const linkedResultBase =
   "flex flex-1 min-h-0 items-center justify-center text-center text-[0.77rem] font-bold rounded leading-[1.15] p-px whitespace-pre-line break-all";
 
+// 結果列だけ（本体=boss を除く）
+const RESULT_COLS = COLUMNS.filter((c) => c.key !== "boss") as readonly {
+  key: ResultColKey;
+  label: string;
+  group: string;
+}[];
+
+// 状態から「最終結果」セルの表示項目を列ごとに計算する（描画とは独立）。
+// 雷水を上・加速を下に並べ替え済み。点灯マーカーだけを集約する。
+function computeSummaryItems(
+  state: BoardState,
+  col: ResultColKey,
+): { s: { action: string; tone: Tone }; outline: boolean }[] {
+  const { selections, marks, showCharge } = state;
+  const visibleRows = ROWS.filter((row) => showCharge || !row.id.startsWith("charge-"));
+
+  const activeResultOf = (row: Row): Option | null => {
+    const activeKey = selections[row.id] ?? null;
+    let opts = row.options;
+    if (row.mirrorOf) {
+      const srcKey = selections[row.mirrorOf] ?? null;
+      const srcKind = srcKey ? elementKind(srcKey) : null;
+      if (!srcKind) return null;
+      const wantKind = srcKind === "fire" ? "tsunami" : "fire";
+      opts = row.options.filter((o) => elementKind(o.key) === wantKind);
+    }
+    return opts.find((o) => o.key === activeKey) ?? null;
+  };
+
+  const cells = visibleRows
+    .map((row) => {
+      const cell = activeResultOf(row)?.results[col] ?? null;
+      return cell ? { rowId: row.id, cell } : null;
+    })
+    .filter((x): x is { rowId: string; cell: ResultCell } => x !== null);
+
+  const raw = cells.flatMap(({ rowId, cell }) => {
+    if (cell.stack) {
+      // i=0=加速, i=1=雷水。点灯したものだけ、種別(rank)付きで返す。
+      return cell.stack
+        .map((s, i) => ({
+          s,
+          outline: false,
+          rank: i === 1 ? 0 : 1, // 雷水=0(上), 加速=1(下)
+          lit: marks[`${rowId}:${col}:${i}`],
+        }))
+        .filter((x) => x.lit);
+    }
+    return [{ s: { action: cell.action, tone: cell.tone }, outline: !!cell.outline, rank: 0 }];
+  });
+  return raw
+    .slice()
+    .sort((a, b) => a.rank - b.rank)
+    .map(({ s, outline }) => ({ s, outline }));
+}
+
+// 「最終結果」だけを描画する読み取り専用ビュー。
+//  - variant="full": 列ラベル付きで画面いっぱい（/share/[code]/result 用）
+//  - variant="pip" : ラベル無しのコンパクト（PiP小窓用）
+export function SummaryView({
+  state,
+  variant,
+}: {
+  state: BoardState;
+  variant: "full" | "pip";
+}) {
+  const gridCols = `repeat(${RESULT_COLS.length}, 1fr)`;
+  if (variant === "pip") {
+    return (
+      <div className="grid h-full w-full gap-[3px]" style={{ gridTemplateColumns: gridCols }}>
+        {RESULT_COLS.map((col) => (
+          <SummaryCell key={col.key} items={computeSummaryItems(state, col.key)} />
+        ))}
+      </div>
+    );
+  }
+  // full: 列見出し + セル
+  return (
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-[3px]">
+      <div className="grid shrink-0 gap-[3px]" style={{ gridTemplateColumns: gridCols }}>
+        {RESULT_COLS.map((col) => (
+          <div
+            key={col.key}
+            className="flex items-center justify-center rounded-[3px] bg-[rgba(255,204,0,0.08)] px-px py-[2px] text-center text-[min(2dvh,15px)] font-bold leading-[1.1] text-[#ffcc00]"
+          >
+            {col.label}
+          </div>
+        ))}
+      </div>
+      <div className="grid min-h-0 flex-1 gap-[3px]" style={{ gridTemplateColumns: gridCols }}>
+        {RESULT_COLS.map((col) => (
+          <SummaryCell key={col.key} items={computeSummaryItems(state, col.key)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 最終結果の1列ぶんのセル（共通描画）
+function SummaryCell({
+  items,
+}: {
+  items: { s: { action: string; tone: Tone }; outline: boolean }[];
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]">
+      {items.length === 0 ? (
+        <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.7rem] text-[#3a3a3a]">
+          ·
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-[3px]">
+          {items.map(({ s, outline }, i) => (
+            <div
+              key={i}
+              className={`${linkedResultBase} ${outline ? outlineClass[s.tone] : toneClass[s.tone]}`}
+            >
+              {s.action}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // 小さなトグルスイッチ（個人ギミックと同デザイン）。表の上部の表示切替に使う。
 function RowToggle({
   label,
@@ -535,101 +661,29 @@ export default function Board({
   // 表示中の行（⚡🧊トグル反映）
   const visibleRows = ROWS.filter((row) => showCharge || !row.id.startsWith("charge-"));
 
-  // ある行の「いま有効な選択結果」を返す（ミラー連動も考慮）。未選択なら null。
-  const activeResultOf = (row: Row): Option | null => {
-    const activeKey = selections[row.id] ?? null;
-    let opts = row.options;
-    if (row.mirrorOf) {
-      const srcKey = selections[row.mirrorOf] ?? null;
-      const srcKind = srcKey ? elementKind(srcKey) : null;
-      if (!srcKind) return null;
-      const wantKind = srcKind === "fire" ? "tsunami" : "fire";
-      opts = row.options.filter((o) => elementKind(o.key) === wantKind);
-    }
-    return opts.find((o) => o.key === activeKey) ?? null;
+  // 最終結果グリッド（インライン表示・PiP小窓）。集約ロジックは共通関数を再利用。
+  const summaryGrid = (variant: "inline" | "pip") => {
+    if (variant === "pip") return <SummaryView state={state} variant="pip" />;
+    // inline: 行見出し「最終結果」＋ 空の本体列 ＋ 各結果列
+    return (
+      <div
+        className="grid min-h-0 flex-1 gap-[3px] rounded border border-[#ffcc00] bg-[rgba(255,204,0,0.06)]"
+        style={{ gridTemplateColumns: gridTemplate }}
+      >
+        <div
+          className="flex items-center justify-center border-l-2 border-[#ffcc00] px-px text-center font-bold leading-[1.1] text-[#ffcc00]"
+          style={{ fontSize: "min(1.5dvh, 11px)" }}
+        >
+          最終結果
+        </div>
+        {/* 本体（記憶）列は空白 */}
+        <div className="min-w-0 rounded" />
+        {resultCols.map((col) => (
+          <SummaryCell key={col.key} items={computeSummaryItems(state, col.key)} />
+        ))}
+      </div>
+    );
   };
-
-  // 「最終結果」行：各結果列について、選択済み行の結果セル（行ID付き）を集約する。
-  const summaryByCol = (col: ResultColKey): { rowId: string; cell: ResultCell }[] =>
-    visibleRows
-      .map((row) => {
-        const cell = activeResultOf(row)?.results[col] ?? null;
-        return cell ? { rowId: row.id, cell } : null;
-      })
-      .filter((x): x is { rowId: string; cell: ResultCell } => x !== null);
-
-  // 最終結果セルに表示する項目（雷水を上・加速を下に並べ替え済み）
-  const summaryItems = (col: ResultColKey) => {
-    const raw = summaryByCol(col).flatMap(({ rowId, cell }) => {
-      if (cell.stack) {
-        // i=0=加速, i=1=雷水。点灯したものだけ、種別(rank)付きで返す。
-        return cell.stack
-          .map((s, i) => ({
-            s,
-            outline: false,
-            rank: i === 1 ? 0 : 1, // 雷水=0(上), 加速=1(下)
-            lit: marks[`${rowId}:${col}:${i}`],
-          }))
-          .filter((x) => x.lit);
-      }
-      return [{ s: { action: cell.action, tone: cell.tone }, outline: !!cell.outline, rank: 0 }];
-    });
-    return raw.slice().sort((a, b) => a.rank - b.rank);
-  };
-
-  // 最終結果グリッド（インライン表示・PiP小窓の両方で使う）
-  const summaryGrid = (variant: "inline" | "pip") => (
-    <div
-      className={
-        variant === "pip"
-          ? "grid h-full w-full gap-[3px]"
-          : "grid min-h-0 flex-1 gap-[3px] rounded border border-[#ffcc00] bg-[rgba(255,204,0,0.06)]"
-      }
-      style={{
-        gridTemplateColumns:
-          variant === "pip" ? `repeat(${resultCols.length}, 1fr)` : gridTemplate,
-      }}
-    >
-      {variant === "inline" && (
-        <>
-          <div
-            className="flex items-center justify-center border-l-2 border-[#ffcc00] px-px text-center font-bold leading-[1.1] text-[#ffcc00]"
-            style={{ fontSize: "min(1.5dvh, 11px)" }}
-          >
-            最終結果
-          </div>
-          {/* 本体（記憶）列は空白 */}
-          <div className="min-w-0 rounded" />
-        </>
-      )}
-      {resultCols.map((col) => {
-        const items = summaryItems(col.key);
-        return (
-          <div
-            key={col.key}
-            className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]"
-          >
-            {items.length === 0 ? (
-              <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.7rem] text-[#3a3a3a]">
-                ·
-              </div>
-            ) : (
-              <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-[3px]">
-                {items.map(({ s, outline }, i) => (
-                  <div
-                    key={i}
-                    className={`${linkedResultBase} ${outline ? outlineClass[s.tone] : toneClass[s.tone]}`}
-                  >
-                    {s.action}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
 
   return (
     <>
