@@ -297,6 +297,8 @@ export default function Home() {
   const [marks, setMarks] = useState<Record<string, boolean>>({});
   // 同行の反対雷水を押せなくする（無効化）マーカー
   const [disabledMarks, setDisabledMarks] = useState<Record<string, boolean>>({});
+  // 別GCの同じ早/遅 雷水をグレーで薄く表示するマーカー（クリックは可能）
+  const [dimmedMarks, setDimmedMarks] = useState<Record<string, boolean>>({});
   // フルスクリーン状態
   const [isFullscreen, setIsFullscreen] = useState(false);
   // フォントサイズ（大中小）。既定は大。
@@ -345,6 +347,15 @@ export default function Home() {
     return `${m[1]}:${otherCol}-accel:1`;
   };
 
+  // 雷水マーカーのキーから、別GCの同じ早/遅 の雷水キーを返す。
+  // 雷水でなければ null。例: gc1:e-accel:1 → gc2:e-accel:1
+  const raisuiOtherGc = (id: string): string | null => {
+    const m = /^(gc1|gc2):(e|l)-accel:1$/.exec(id);
+    if (!m) return null;
+    const otherRow = m[1] === "gc1" ? "gc2" : "gc1";
+    return `${otherRow}:${m[2]}-accel:1`;
+  };
+
   // 緑マーカーの点灯ルール（要素ごとに独立）
   //  - 加速(:0)  : GC1/GC2 合わせて1つだけ。後から押したものに移る。
   //  - 雷水(:1)  : 押すと同行の反対雷水を無効化し、早/遅が逆の相手を点灯させる。
@@ -353,6 +364,7 @@ export default function Home() {
     const isAccel = id.endsWith(":0");
     const partner = raisuiPartner(id);
     const sameRow = raisuiSameRow(id);
+    const otherGc = raisuiOtherGc(id);
 
     setMarks((prev) => {
       const next: Record<string, boolean> = { ...prev };
@@ -373,9 +385,14 @@ export default function Home() {
       return next;
     });
 
-    // 同行の反対雷水を押せなくする（再押下で解除）
+    // 同行の反対雷水を押せなくする（完全無効・再押下で解除）
     if (sameRow) {
       setDisabledMarks((prev) => ({ ...prev, [sameRow]: !wasLit }));
+    }
+    // 別GCの同じ早/遅 をグレーで薄く表示（クリックは可能・再押下で解除）。
+    // 自分自身が薄表示中にクリックされたら、その薄表示は解除する。
+    if (otherGc) {
+      setDimmedMarks((prev) => ({ ...prev, [otherGc]: !wasLit, [id]: false }));
     }
   };
 
@@ -391,6 +408,7 @@ export default function Home() {
     setSelections({});
     setMarks({});
     setDisabledMarks({});
+    setDimmedMarks({});
   };
 
   // トグルOFFのとき個人ギミック列を隠す
@@ -632,6 +650,7 @@ export default function Home() {
                             const subId = `${markId}:${i}`;
                             const subLit = marks[subId];
                             const subDisabled = disabledMarks[subId];
+                            const subDimmed = dimmedMarks[subId] && !subLit;
                             return (
                               <button
                                 key={subId}
@@ -640,9 +659,11 @@ export default function Home() {
                                 className={`${linkedResultBase} w-full border-2 border-[#3fbf6f] font-[inherit] ${
                                   subDisabled
                                     ? "cursor-not-allowed border-[#333] bg-[rgba(255,255,255,0.02)] text-[#444] opacity-40"
-                                    : subLit
-                                      ? "cursor-pointer bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
-                                      : "cursor-pointer bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
+                                    : subDimmed
+                                      ? "cursor-pointer border-[#555] bg-[rgba(255,255,255,0.03)] text-[#777] opacity-60"
+                                      : subLit
+                                        ? "cursor-pointer bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
+                                        : "cursor-pointer bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
                                 }`}
                                 onClick={() => toggleMark(row.id, subId)}
                               >
