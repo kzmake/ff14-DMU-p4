@@ -118,12 +118,11 @@ export default function SharedController({ code }: { code: string }) {
 
   return (
     <div className="flex w-full flex-col gap-3 p-1">
-      {/* 接続インジケータだけ（ヘッダー・リセットは無し） */}
-      <div className="flex items-center justify-end">
-        <span title={connected ? "同期中" : "未接続"} className="text-sm">
-          {connected ? "🟢" : "⚪"}
-        </span>
-      </div>
+      {/* 接続インジケータ：上端の極細バー（色だけで状態を示す） */}
+      <div
+        title={connected ? "同期中" : "未接続"}
+        className={`h-[3px] w-full rounded-full ${connected ? "bg-[#3fbf6f]" : "bg-[#555]"}`}
+      />
 
       {visibleRows.map((row) => {
         const activeKey = state.selections[row.id] ?? null;
