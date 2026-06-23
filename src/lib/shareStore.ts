@@ -1,86 +1,70 @@
-// 共有コードごとの盤面状態をプロセス内メモリで保持し、SSE購読者へ配信する。
-// 注意: インメモリなのでサーバー再起動・複数インスタンスでは共有されない。
+// 共有コードごとの盤面状態を保持する。
+// Vercel KV(Upstash Redis) があればそれを使い、複数インスタンス間で共有する。
+// KV の環境変数が無い場合（ローカル等）はプロセス内メモリにフォールバックする。
+import { Redis } from "@upstash/redis";
 import { type BoardState, INITIAL_BOARD_STATE } from "@/lib/boardState";
 
-type Subscriber = (payload: { state: BoardState; rev: number; origin: string | null }) => void;
+export type RoomSnapshot = { state: BoardState; rev: number; origin: string | null };
 
-type Room = {
-  state: BoardState;
-  rev: number; // 単調増加。更新のたびに +1。
-  subscribers: Set<Subscriber>;
-  lastActiveAt: number; // 最終アクティブ時刻（ms）。ping/更新/購読で更新。
+// KV レコード（1コード=1JSON）。
+const KEY = (code: string) => `share:${code}`;
+// アイドル破棄まで（KVのTTL）。アクセスのたびに延長する。
+const TTL_SECONDS = 60 * 60; // 1時間
+
+// Upstash Redis クライアント（環境変数があれば生成）。
+// Vercel KV 統合は KV_REST_API_URL / KV_REST_API_TOKEN を、
+// Upstash 直は UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN を提供する。
+function makeRedis(): Redis | null {
+  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+  return new Redis({ url, token });
+}
+
+const g = globalThis as unknown as {
+  __shareRedis?: Redis | null;
+  __shareMem?: Map<string, RoomSnapshot>;
 };
+const redis: Redis | null = g.__shareRedis ?? (g.__shareRedis = makeRedis());
+// KV が無いときのメモリフォールバック
+const mem: Map<string, RoomSnapshot> = g.__shareMem ?? (g.__shareMem = new Map());
 
-// アイドル部屋の保持時間（最終アクティブからこれを過ぎ、購読者0なら破棄）
-const ROOM_TTL_MS = 10 * 60 * 1000; // 10分
+export const usingKV = redis !== null;
 
-// HMR/モジュール再評価でも状態が消えないよう globalThis に保持する。
-const g = globalThis as unknown as { __shareRooms?: Map<string, Room> };
-const rooms: Map<string, Room> = g.__shareRooms ?? (g.__shareRooms = new Map());
-
-// Date.now を安全に呼ぶ（環境により未提供のことはないが念のため）。
-const now = () => Date.now();
-
-function getRoom(code: string): Room {
-  let room = rooms.get(code);
-  if (!room) {
-    room = {
-      state: { ...INITIAL_BOARD_STATE },
-      rev: 0,
-      subscribers: new Set(),
-      lastActiveAt: now(),
-    };
-    rooms.set(code, room);
-  }
-  return room;
-}
-
-// アイドルかつ購読者ゼロの部屋を掃除する（メモリリーク防止）。
-function sweepIdleRooms() {
-  const t = now();
-  for (const [code, room] of rooms) {
-    if (room.subscribers.size === 0 && t - room.lastActiveAt > ROOM_TTL_MS) {
-      rooms.delete(code);
+// 現在の状態とリビジョンを取得（無ければ初期状態）。
+export async function getState(code: string): Promise<RoomSnapshot> {
+  if (redis) {
+    const data = await redis.get<RoomSnapshot>(KEY(code));
+    if (data) {
+      // アクセスで TTL 延長
+      await redis.expire(KEY(code), TTL_SECONDS);
+      return data;
     }
+    return { state: { ...INITIAL_BOARD_STATE }, rev: 0, origin: null };
   }
+  return mem.get(code) ?? { state: { ...INITIAL_BOARD_STATE }, rev: 0, origin: null };
 }
 
-// 部屋を生存扱いにする（keepalive ping や各操作から呼ぶ）。
-export function touch(code: string): void {
-  getRoom(code).lastActiveAt = now();
-  sweepIdleRooms();
-}
-
-// 現在の状態とリビジョンを取得（部屋が無ければ初期状態で作成）。
-export function getState(code: string): { state: BoardState; rev: number } {
-  const room = getRoom(code);
-  return { state: room.state, rev: room.rev };
-}
-
-// 状態を更新し、購読者へ配信。origin は更新元のクライアントID（エコー判定用）。
-export function setState(code: string, state: BoardState, origin: string | null): number {
-  const room = getRoom(code);
-  room.state = state;
-  room.rev += 1;
-  room.lastActiveAt = now();
-  const payload = { state: room.state, rev: room.rev, origin };
-  for (const sub of room.subscribers) {
-    try {
-      sub(payload);
-    } catch {
-      // 配信失敗した購読者は無視（close 済みなど）
-    }
+// 状態を更新し、新しい rev を返す。origin は更新元クライアントID（エコー判定用）。
+export async function setState(
+  code: string,
+  state: BoardState,
+  origin: string | null,
+): Promise<number> {
+  const prev = await getState(code);
+  const next: RoomSnapshot = { state, rev: prev.rev + 1, origin };
+  if (redis) {
+    await redis.set(KEY(code), next, { ex: TTL_SECONDS });
+  } else {
+    mem.set(code, next);
   }
-  return room.rev;
+  return next.rev;
 }
 
-// 購読を登録。戻り値を呼ぶと解除。
-export function subscribe(code: string, sub: Subscriber): () => void {
-  const room = getRoom(code);
-  room.subscribers.add(sub);
-  room.lastActiveAt = now();
-  return () => {
-    room.subscribers.delete(sub);
-    room.lastActiveAt = now();
-  };
+// keepalive: 生存延長（KVはTTL延長、メモリは何もしない）。
+export async function touch(code: string): Promise<void> {
+  if (redis) {
+    // キーが無ければ作らない（存在時のみ延長）
+    await redis.expire(KEY(code), TTL_SECONDS);
+  }
 }

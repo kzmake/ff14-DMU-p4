@@ -1,4 +1,4 @@
-import { getState, subscribe } from "@/lib/shareStore";
+import { getState } from "@/lib/shareStore";
 
 // SSE は長時間接続を保つので動的・Node ランタイムで動かす。
 export const dynamic = "force-dynamic";
@@ -7,50 +7,81 @@ export const runtime = "nodejs";
 // この時間に達したら自発的に閉じ、クライアントが自動再接続する。
 export const maxDuration = 60;
 
+// KV をポーリングする間隔（ms）。変化があればクライアントへ配信。
+const POLL_INTERVAL_MS = 1000;
+// 関数上限の手前で自発的に閉じる時間（ms）
+const LIFESPAN_MS = 55000;
+// ハートビート（プロキシ切断対策）
+const HEARTBEAT_MS = 15000;
+
 // GET /api/share/[code]/stream
-// SSE で「現在状態」を初回送信し、以後の更新をプッシュ配信する。
+// SSE で「現在状態」を初回送信し、以後 KV の rev 変化をポーリングしてプッシュ配信する。
 export async function GET(req: Request, ctx: { params: Promise<{ code: string }> }) {
   const { code } = await ctx.params;
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
-    start(controller) {
+    async start(controller) {
+      let closed = false;
       const send = (data: unknown) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        if (closed) return;
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          close();
+        }
       };
 
-      // 初回：現在の状態を送る（origin は無し＝必ず適用させる）
-      const { state, rev } = getState(code);
-      send({ state, rev, origin: null });
+      // 初回：現在の状態を送る
+      let lastRev = -1;
+      try {
+        const snap = await getState(code);
+        lastRev = snap.rev;
+        send(snap);
+      } catch {
+        // KV エラーでも接続は維持（次のポーリングで再試行）
+      }
 
-      // 以後の更新を購読
-      const unsubscribe = subscribe(code, (payload) => send(payload));
+      // KV を定期ポーリングし、rev が進んでいれば配信
+      const poll = setInterval(async () => {
+        if (closed) return;
+        try {
+          const snap = await getState(code);
+          if (snap.rev !== lastRev) {
+            lastRev = snap.rev;
+            send(snap);
+          }
+        } catch {
+          // 一時的なKVエラーは無視
+        }
+      }, POLL_INTERVAL_MS);
 
-      // 接続維持用のハートビート（プロキシ切断対策）。Vercel向けに短め(15s)。
+      // ハートビート
       const heartbeat = setInterval(() => {
+        if (closed) return;
         try {
           controller.enqueue(encoder.encode(": ping\n\n"));
         } catch {
           close();
         }
-      }, 15000);
+      }, HEARTBEAT_MS);
 
-      // クライアント切断時のクリーンアップ
-      const close = () => {
+      // 上限手前で自発close → クライアント再接続
+      const lifespan = setTimeout(() => close(), LIFESPAN_MS);
+
+      function close() {
+        if (closed) return;
+        closed = true;
+        clearInterval(poll);
         clearInterval(heartbeat);
         clearTimeout(lifespan);
-        unsubscribe();
         try {
           controller.close();
         } catch {
           // already closed
         }
-      };
+      }
 
-      // 関数実行上限の手前(55s)で自発的に閉じる。クライアントが再接続する。
-      const lifespan = setTimeout(close, 55000);
-
-      // abort シグナルで解放
       req.signal.addEventListener("abort", close);
     },
   });

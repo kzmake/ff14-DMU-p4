@@ -7,6 +7,6 @@ export const runtime = "nodejs";
 // 何も操作しなくても定期的に叩かれ、部屋を生存扱いにする。pong を返す。
 export async function POST(_req: Request, ctx: { params: Promise<{ code: string }> }) {
   const { code } = await ctx.params;
-  touch(code);
+  await touch(code);
   return Response.json({ pong: true, t: Date.now() });
 }
