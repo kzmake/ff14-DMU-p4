@@ -640,7 +640,14 @@ export default function Home() {
             className="grid min-h-0 flex-1 gap-[3px] rounded border border-[#ffcc00] bg-[rgba(255,204,0,0.06)]"
             style={{ gridTemplateColumns: gridTemplate }}
           >
-            <div className="border-l-2 border-[#ffcc00]" />
+            <div
+              className="flex items-center justify-center border-l-2 border-[#ffcc00] px-px text-center font-bold leading-[1.1] text-[#ffcc00]"
+              style={{ fontSize: "min(1.5dvh, 11px)" }}
+            >
+              最終結果
+            </div>
+            {/* 本体（記憶）列は空白 */}
+            <div className="min-w-0 rounded" />
             {resultCols.map((col) => {
               // 集約：stack（加速/雷水）は点灯したものだけ。それ以外はそのまま。
               const items = summaryByCol(col.key).flatMap(({ rowId, cell }) => {
