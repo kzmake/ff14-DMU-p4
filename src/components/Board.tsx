@@ -101,7 +101,6 @@ function OptButton({
   active,
   big,
   disabled,
-  square,
   onClick,
 }: {
   label: string;
@@ -110,7 +109,6 @@ function OptButton({
   active: boolean;
   big?: boolean;
   disabled?: boolean;
-  square?: boolean;
   onClick?: () => void;
 }) {
   return (
@@ -118,11 +116,9 @@ function OptButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`flex min-w-0 cursor-pointer items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[10px] border-2 font-extrabold leading-[1.1] ${
-        square ? "aspect-square h-auto w-full" : "h-full min-h-[44px] w-full"
-      } ${big ? "text-[18px]" : "text-[16px]"} ${
-        disabled ? "cursor-default border-dashed" : ""
-      } ${active ? onClass : offBtn}`}
+      className={`flex h-full min-h-0 w-full min-w-0 cursor-pointer items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[10px] border-2 font-extrabold leading-[1.1] ${
+        big ? "text-[18px]" : "text-[16px]"
+      } ${disabled ? "cursor-default border-dashed" : ""} ${active ? onClass : offBtn}`}
     >
       {sub && (
         <b className="inline-flex h-[1.7em] min-w-[1.7em] items-center justify-center rounded-[7px] bg-[#c96442] text-[20px] font-black text-[#262624]">
@@ -248,11 +244,10 @@ export default function Board({
   const setAccel = (key: string) => onChange({ ...state, accel: state.accel === key ? null : key });
 
   // 加速ボタン（GC1/GC2 × 早/遅）。値=そのGCのホント/ウソに従う。
-  const accelBtn = (gc: GcKey, side: Side, sq?: boolean) => {
+  const accelBtn = (gc: GcKey, side: Side) => {
     const key = `${gc}:${side}`;
     return (
       <OptButton
-        square={sq}
         sub={side === "early" ? "早" : "遅"}
         label={state[gc] ? accelLabel(state, gc) : "動く"}
         onClass={onGreenOutline}
@@ -263,11 +258,10 @@ export default function Board({
   };
 
   // 雷水位置ボタン（GC1のみ連動）。
-  const sankaiBtn = (side: Side, sq?: boolean) => {
+  const sankaiBtn = (side: Side) => {
     const tone = state.gc1 ? raisuiTone(state, "gc1") : "blue";
     return (
       <OptButton
-        square={sq}
         sub={side === "early" ? "早" : "遅"}
         label={state.gc1 ? raisuiLabel(state, "gc1") : "雷水"}
         onClass={tone === "red" ? onRed : onBlue}
@@ -279,11 +273,10 @@ export default function Board({
 
   // GC2 雷水の連動表示（押せない）。GC1の早/遅選択で来る側だけ点灯。
   const linkedSide = linkedGc2Side(state);
-  const linkedBtn = (side: Side, sq?: boolean) => {
+  const linkedBtn = (side: Side) => {
     const isActive = side === linkedSide && state.gc2;
     return (
       <OptButton
-        square={sq}
         sub={side === "early" ? "早" : "遅"}
         label={isActive ? raisuiLabel(state, "gc2") : "雷水"}
         onClass={raisuiTone(state, "gc2") === "red" ? onRed : onBlue}
@@ -293,11 +286,10 @@ export default function Board({
     );
   };
 
-  const hontoUso = (key: "gc1" | "gc2" | "fire" | "tsunami", sq?: boolean) => (
+  const hontoUso = (key: "gc1" | "gc2" | "fire" | "tsunami") => (
     <>
       <OptButton
         big
-        square={sq}
         label="ホント"
         onClass={onBlue}
         active={state[key] === "honto"}
@@ -305,7 +297,6 @@ export default function Board({
       />
       <OptButton
         big
-        square={sq}
         label="ウソ"
         onClass={onRed}
         active={state[key] === "uso"}
@@ -323,33 +314,33 @@ export default function Board({
   // 記憶（4行×6列）。盤面・PiP で共通利用。sq=true でボタンを正方形に。
   const memoGrid = (sq?: boolean) => (
     <div
-      className={`grid grid-cols-[1.6em_1fr_1fr_1.6em_1fr_1fr] gap-1.5 ${
-        sq ? "items-center content-start" : "min-h-0 flex-1 grid-rows-4"
+      className={`grid min-h-0 flex-1 grid-cols-[1.6em_1fr_1fr_1.6em_1fr_1fr] grid-rows-4 gap-1.5 ${
+        sq ? "min-h-[120px]" : ""
       }`}
     >
       <RowLabel>GC1</RowLabel>
-      {hontoUso("gc1", sq)}
+      {hontoUso("gc1")}
       <RowLabel>GC2</RowLabel>
-      {hontoUso("gc2", sq)}
+      {hontoUso("gc2")}
 
       <RowLabel>加速</RowLabel>
-      {accelBtn("gc1", "early", sq)}
-      {accelBtn("gc1", "late", sq)}
+      {accelBtn("gc1", "early")}
+      {accelBtn("gc1", "late")}
       <RowLabel>加速</RowLabel>
-      {accelBtn("gc2", "early", sq)}
-      {accelBtn("gc2", "late", sq)}
+      {accelBtn("gc2", "early")}
+      {accelBtn("gc2", "late")}
 
       <RowLabel>雷水</RowLabel>
-      {sankaiBtn("early", sq)}
-      {sankaiBtn("late", sq)}
+      {sankaiBtn("early")}
+      {sankaiBtn("late")}
       <RowLabel>雷水</RowLabel>
-      {linkedBtn("early", sq)}
-      {linkedBtn("late", sq)}
+      {linkedBtn("early")}
+      {linkedBtn("late")}
 
       <RowLabel>🔥</RowLabel>
-      {hontoUso("fire", sq)}
+      {hontoUso("fire")}
       <RowLabel>🌊</RowLabel>
-      {hontoUso("tsunami", sq)}
+      {hontoUso("tsunami")}
     </div>
   );
 
