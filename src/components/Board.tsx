@@ -115,34 +115,47 @@ export default function Board({
   onChange: (next: BoardState) => void;
   shareInfo?: { code: string; connected: boolean };
 }) {
-  // 結果エリアの高さ（px）。null は既定の 40dvh。仕切りドラッグで変える。
-  const [resultH, setResultH] = useState<number | null>(null);
+  // 結果エリアの高さ（px）。null は既定。本体と PiP で別々に保持。
+  const [resultH, setResultH] = useState<number | null>(null); // 本体
+  const [pipResultH, setPipResultH] = useState<number | null>(null); // PiP
 
-  // 仕切りドラッグ：結果エリアの高さを上下リサイズ。
-  const onDividerDown = (downY: number) => {
-    const startH = resultH ?? window.innerHeight * 0.4;
+  // 仕切りドラッグの共通実装。win=対象ウィンドウ、setH=高さ更新先。
+  const startResize = (
+    downY: number,
+    win: Window,
+    current: number | null,
+    setH: (h: number) => void,
+  ) => {
+    const startH = current ?? win.innerHeight * 0.4;
     const move = (clientY: number) => {
-      const h = Math.max(60, Math.min(window.innerHeight - 120, startH + (clientY - downY)));
-      setResultH(h);
+      setH(Math.max(60, Math.min(win.innerHeight - 120, startH + (clientY - downY))));
     };
     const mm = (e: MouseEvent) => move(e.clientY);
     const tm = (e: TouchEvent) => move(e.touches[0].clientY);
     const up = () => {
-      window.removeEventListener("mousemove", mm);
-      window.removeEventListener("mouseup", up);
-      window.removeEventListener("touchmove", tm);
-      window.removeEventListener("touchend", up);
+      win.removeEventListener("mousemove", mm);
+      win.removeEventListener("mouseup", up);
+      win.removeEventListener("touchmove", tm);
+      win.removeEventListener("touchend", up);
     };
-    window.addEventListener("mousemove", mm);
-    window.addEventListener("mouseup", up);
-    window.addEventListener("touchmove", tm, { passive: true });
-    window.addEventListener("touchend", up);
+    win.addEventListener("mousemove", mm);
+    win.addEventListener("mouseup", up);
+    win.addEventListener("touchmove", tm, { passive: true });
+    win.addEventListener("touchend", up);
+  };
+
+  // 本体の仕切り
+  const onDividerDown = (downY: number) => startResize(downY, window, resultH, setResultH);
+  // PiP の仕切り（PiP のウィンドウ基準）
+  const onPipDividerDown = (downY: number) => {
+    const win = pipContainer?.ownerDocument.defaultView;
+    if (win) startResize(downY, win, pipResultH, setPipResultH);
   };
 
   // オーバーレイ(PiP)。記憶も含めるか・上下反転するかをトグルできる。
   const [pipContainer, setPipContainer] = useState<HTMLElement | null>(null);
-  const [pipMemo, setPipMemo] = useState(false); // 記憶も表示
-  const [pipFlip, setPipFlip] = useState(false); // 上下反転
+  const [pipMemo, setPipMemo] = useState(true); // 既定: 記憶も表示
+  const [pipFlip, setPipFlip] = useState(true); // 既定: 上下反転（記憶が上・結果が下）
   const pipOpen = pipContainer !== null;
 
   const openPip = async (withMemo: boolean, flip: boolean) => {
@@ -319,23 +332,24 @@ export default function Board({
         </button>
         <button
           type="button"
-          aria-pressed={pipMemo}
+          aria-pressed={!pipMemo}
           onClick={() => {
             const next = !pipMemo;
             setPipMemo(next);
             reopenIfOpen(next, pipFlip);
           }}
           className={`inline-flex cursor-pointer items-center gap-[0.2em] rounded border px-[0.5em] py-[0.2em] text-[0.8em] font-bold ${
-            pipMemo
+            !pipMemo
               ? "border-[#ffcc00] bg-[#ffcc00] text-[#0f0f0f]"
               : "border-[#555] bg-[#1c1c1c] text-[#ffcc00] hover:border-[#ffcc00]"
           }`}
         >
-          🧠 記憶も
+          {/* 既定で記憶も表示。ボタンは隠す方向 */}
+          {pipMemo ? "🧠 記憶を隠す" : "🧠 記憶も表示"}
         </button>
         <button
           type="button"
-          aria-pressed={pipFlip}
+          aria-pressed={!pipFlip}
           onClick={() => {
             const next = !pipFlip;
             setPipFlip(next);
@@ -345,12 +359,13 @@ export default function Board({
             }
           }}
           className={`inline-flex cursor-pointer items-center gap-[0.2em] rounded border px-[0.5em] py-[0.2em] text-[0.8em] font-bold ${
-            pipFlip
+            !pipFlip
               ? "border-[#ffcc00] bg-[#ffcc00] text-[#0f0f0f]"
               : "border-[#555] bg-[#1c1c1c] text-[#ffcc00] hover:border-[#ffcc00]"
           }`}
         >
-          🔃 上下反転
+          {/* 既定で反転（記憶が上）。ボタンは結果を上へ戻す方向 */}
+          {pipFlip ? "🔃 結果を上に" : "🔃 記憶を上に"}
         </button>
         {shareInfo && (
           <span
@@ -386,8 +401,8 @@ export default function Board({
         <span className="h-[4px] w-12 rounded-full bg-[#555] hover:bg-[#ffcc00]" />
       </div>
 
-      {/* 記憶（下）：4行×6列。PiPに記憶を出している間は本体側は隠す */}
-      {!(pipOpen && pipMemo) && memoGrid}
+      {/* 記憶（下）：4行×6列。本体は常に表示（PiPに出していても残す） */}
+      {memoGrid}
 
       {/* PiP 小窓：結果（＋記憶も表示ON時は記憶）を描画。state と自動同期・操作可 */}
       {pipContainer &&
@@ -395,11 +410,27 @@ export default function Board({
           <>
             <div
               className="flex shrink-0 flex-col rounded-lg border-2 border-[#ffcc00] bg-[rgba(255,204,0,0.06)] p-1.5"
-              style={{ height: pipMemo ? "40%" : "100%" }}
+              style={{
+                height: pipMemo ? (pipResultH != null ? `${pipResultH}px` : "40%") : "100%",
+              }}
             >
               <SummaryView state={state} />
             </div>
-            {pipMemo && memoGrid}
+            {pipMemo && (
+              <>
+                <div
+                  className="flex shrink-0 cursor-row-resize items-center justify-center py-[2px]"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    onPipDividerDown(e.clientY);
+                  }}
+                  onTouchStart={(e) => onPipDividerDown(e.touches[0].clientY)}
+                >
+                  <span className="h-[4px] w-12 rounded-full bg-[#555] hover:bg-[#ffcc00]" />
+                </div>
+                {memoGrid}
+              </>
+            )}
           </>,
           pipContainer,
         )}
