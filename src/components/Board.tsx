@@ -20,19 +20,19 @@ export { type BoardState, INITIAL_BOARD_STATE };
 
 // トーン→クラス。塗り（雷=青/水=赤）と枠線だけ（何もしない・個人ギミック）。
 const toneClass: Record<Tone, string> = {
-  blue: "bg-[#4dadff] text-white border-[#3399ff]",
-  red: "bg-[#ff4d4d] text-white border-[#ff3333]",
-  green: "bg-[#3fbf6f] text-white border-[#2fa85c]",
-  "outline-blue": "bg-transparent text-[#8fcaff] border-[#4dadff]",
-  "outline-red": "bg-transparent text-[#ff9999] border-[#ff4d4d]",
-  "outline-green": "bg-transparent text-[#8fe6ad] border-[#3fbf6f]",
+  blue: "bg-[#7398c4] text-white border-[#5f86b5]",
+  red: "bg-[#c2705e] text-white border-[#b3604e]",
+  green: "bg-[#7f9f76] text-white border-[#6e8e66]",
+  "outline-blue": "bg-transparent text-[#a8c2dd] border-[#7398c4]",
+  "outline-red": "bg-transparent text-[#d6a397] border-[#c2705e]",
+  "outline-green": "bg-transparent text-[#aac49f] border-[#7f9f76]",
 };
 
 // ボタンの選択中クラス（ホント=青/ウソ=赤）。
-const onBlue = "bg-[#4dadff] text-white border-[#3399ff]";
-const onRed = "bg-[#ff4d4d] text-white border-[#ff3333]";
-const onGreenOutline = "bg-transparent text-[#3fbf6f] border-[#3fbf6f]";
-const offBtn = "bg-[#222] text-[#ccc] border-[#444]";
+const onBlue = "bg-[#7398c4] text-white border-[#5f86b5]";
+const onRed = "bg-[#c2705e] text-white border-[#b3604e]";
+const onGreenOutline = "bg-transparent text-[#7f9f76] border-[#7f9f76]";
+const offBtn = "bg-[#30302e] text-[#c2bfb4] border-[#46443f]";
 
 const cellBase =
   "flex flex-1 min-h-0 items-center justify-center rounded-md border-2 text-center text-[0.8rem] font-bold leading-[1.2] p-1 whitespace-pre-line";
@@ -40,9 +40,9 @@ const cellBase =
 // 結果1列ぶん（空ならプレースホルダーをうっすら）。
 function ResultColumn({ placeholder, cells }: { placeholder: string; cells: ResultCell[] }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1 rounded-md border border-[#333] bg-[rgba(255,255,255,0.03)] p-1">
+    <div className="flex min-w-0 flex-col gap-1 rounded-md border border-[#3a3834] bg-[rgba(255,255,255,0.03)] p-1">
       {cells.length === 0 ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center whitespace-pre-line rounded-md border-2 border-dashed border-[#2c2c2c] text-center text-[0.7rem] font-semibold leading-[1.2] text-[#555]">
+        <div className="flex min-h-0 flex-1 items-center justify-center whitespace-pre-line rounded-md border-2 border-dashed border-[#34322e] text-center text-[0.7rem] font-semibold leading-[1.2] text-[#54524c]">
           {placeholder}
         </div>
       ) : (
@@ -96,7 +96,7 @@ function OptButton({
       } ${disabled ? "cursor-default border-dashed" : ""} ${active ? onClass : offBtn}`}
     >
       {sub && (
-        <b className="inline-flex h-[1.7em] min-w-[1.7em] items-center justify-center rounded-[7px] bg-[#ffcc00] text-[20px] font-black text-[#0f0f0f]">
+        <b className="inline-flex h-[1.7em] min-w-[1.7em] items-center justify-center rounded-[7px] bg-[#c96442] text-[20px] font-black text-[#262624]">
           {sub}
         </b>
       )}
@@ -188,7 +188,7 @@ export default function Board({
       }
     }
     pip.document.body.style.cssText =
-      "margin:0;background:#0f0f0f;padding:6px;height:100dvh;display:flex;overflow:hidden;";
+      "margin:0;background:#262624;padding:6px;height:100dvh;display:flex;overflow:hidden;";
     // 結果＋記憶はこの el の flex子。flip は el の flex-direction を切り替える。
     const el = pip.document.createElement("div");
     el.style.cssText = `display:flex;flex-direction:${
@@ -281,7 +281,7 @@ export default function Board({
   );
 
   const RowLabel = ({ children }: { children: React.ReactNode }) => (
-    <span className="flex items-center justify-center text-center text-[14px] font-extrabold leading-[1.1] text-[#ffcc00]">
+    <span className="flex items-center justify-center text-center text-[14px] font-extrabold leading-[1.1] text-[#c96442]">
       {children}
     </span>
   );
@@ -319,7 +319,7 @@ export default function Board({
     <div className="flex h-full min-h-0 flex-1 flex-col gap-1.5">
       {/* ヘッダー：PiP と共有状態 */}
       <div
-        className="flex shrink-0 items-center gap-2 border-b-2 border-[#ffcc00] pb-[3px]"
+        className="flex shrink-0 items-center gap-2 border-b-2 border-[#c96442] pb-[3px]"
         style={{ fontSize: "min(2dvh, 16px)" }}
       >
         <button
@@ -327,8 +327,8 @@ export default function Board({
           onClick={togglePip}
           className={`inline-flex cursor-pointer items-center gap-[0.2em] rounded border px-[0.5em] py-[0.2em] text-[0.8em] font-bold ${
             pipOpen
-              ? "border-[#ffcc00] bg-[#2a2a2a] text-[#ffcc00]"
-              : "border-[#555] bg-[#1c1c1c] text-[#ffcc00] hover:border-[#ffcc00]"
+              ? "border-[#c96442] bg-[#3a3936] text-[#c96442]"
+              : "border-[#54524c] bg-[#30302e] text-[#c96442] hover:border-[#c96442]"
           }`}
         >
           🪟 オーバーレイ表示
@@ -343,8 +343,8 @@ export default function Board({
           }}
           className={`inline-flex cursor-pointer items-center gap-[0.2em] rounded border px-[0.5em] py-[0.2em] text-[0.8em] font-bold ${
             !pipMemo
-              ? "border-[#ffcc00] bg-[#ffcc00] text-[#0f0f0f]"
-              : "border-[#555] bg-[#1c1c1c] text-[#ffcc00] hover:border-[#ffcc00]"
+              ? "border-[#c96442] bg-[#c96442] text-[#262624]"
+              : "border-[#54524c] bg-[#30302e] text-[#c96442] hover:border-[#c96442]"
           }`}
         >
           {/* 既定で記憶も表示。ボタンは隠す方向 */}
@@ -363,8 +363,8 @@ export default function Board({
           }}
           className={`inline-flex cursor-pointer items-center gap-[0.2em] rounded border px-[0.5em] py-[0.2em] text-[0.8em] font-bold ${
             !pipFlip
-              ? "border-[#ffcc00] bg-[#ffcc00] text-[#0f0f0f]"
-              : "border-[#555] bg-[#1c1c1c] text-[#ffcc00] hover:border-[#ffcc00]"
+              ? "border-[#c96442] bg-[#c96442] text-[#262624]"
+              : "border-[#54524c] bg-[#30302e] text-[#c96442] hover:border-[#c96442]"
           }`}
         >
           {/* 既定で反転（記憶が上）。ボタンは結果を上へ戻す方向 */}
@@ -374,18 +374,26 @@ export default function Board({
           <span
             className={`inline-flex items-center gap-1 rounded border px-[0.4em] py-[0.1em] text-[0.7em] font-bold ${
               shareInfo.connected
-                ? "border-[#3fbf6f] bg-[rgba(63,191,111,0.15)] text-[#8fe6ad]"
-                : "border-[#888] bg-[rgba(255,255,255,0.06)] text-[#aaa]"
+                ? "border-[#7f9f76] bg-[rgba(127,159,118,0.15)] text-[#aac49f]"
+                : "border-[#8a8780] bg-[rgba(255,255,255,0.06)] text-[#a3a097]"
             }`}
           >
             {shareInfo.connected ? "🟢" : "⚪"} 共有 {shareInfo.code}
           </span>
         )}
+        {/* 右上：全選択をリセット */}
+        <button
+          type="button"
+          onClick={() => onChange({ ...INITIAL_BOARD_STATE })}
+          className="ml-auto inline-flex cursor-pointer items-center gap-[0.2em] rounded border border-[#54524c] bg-[#30302e] px-[0.5em] py-[0.2em] text-[0.8em] font-bold text-[#c2bfb4] hover:border-[#c96442] hover:text-[#c96442]"
+        >
+          ↺ リセット
+        </button>
       </div>
 
       {/* 結果（上） */}
       <div
-        className="flex shrink-0 flex-col rounded-lg border-2 border-[#ffcc00] bg-[rgba(255,204,0,0.06)] p-1.5"
+        className="flex shrink-0 flex-col rounded-lg border-2 border-[#c96442] bg-[rgba(201,100,66,0.06)] p-1.5"
         style={{ height: resultH != null ? `${resultH}px` : "40dvh" }}
       >
         <SummaryView state={state} />
@@ -401,7 +409,7 @@ export default function Board({
         onTouchStart={(e) => onDividerDown(e.touches[0].clientY)}
         title="ドラッグで結果と記憶の高さを調整"
       >
-        <span className="h-[4px] w-12 rounded-full bg-[#555] hover:bg-[#ffcc00]" />
+        <span className="h-[4px] w-12 rounded-full bg-[#54524c] hover:bg-[#c96442]" />
       </div>
 
       {/* 記憶（下）：4行×6列。本体は常に表示（PiPに出していても残す） */}
@@ -412,7 +420,7 @@ export default function Board({
         createPortal(
           <>
             <div
-              className="flex shrink-0 flex-col rounded-lg border-2 border-[#ffcc00] bg-[rgba(255,204,0,0.06)] p-1.5"
+              className="flex shrink-0 flex-col rounded-lg border-2 border-[#c96442] bg-[rgba(201,100,66,0.06)] p-1.5"
               style={{
                 height: pipMemo ? (pipResultH != null ? `${pipResultH}px` : "40%") : "100%",
               }}
@@ -429,7 +437,7 @@ export default function Board({
                   }}
                   onTouchStart={(e) => onPipDividerDown(e.touches[0].clientY)}
                 >
-                  <span className="h-[4px] w-12 rounded-full bg-[#555] hover:bg-[#ffcc00]" />
+                  <span className="h-[4px] w-12 rounded-full bg-[#54524c] hover:bg-[#c96442]" />
                 </div>
                 {memoGrid}
               </>

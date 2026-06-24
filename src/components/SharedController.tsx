@@ -17,10 +17,10 @@ function makeClientId(): string {
   return `c-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
 }
 
-const onBlue = "bg-[#4dadff] text-white border-[#3399ff]";
-const onRed = "bg-[#ff4d4d] text-white border-[#ff3333]";
-const onGreen = "bg-transparent text-[#3fbf6f] border-[#3fbf6f]";
-const offBtn = "bg-[#222] text-[#ccc] border-[#444]";
+const onBlue = "bg-[#7398c4] text-white border-[#5f86b5]";
+const onRed = "bg-[#c2705e] text-white border-[#b3604e]";
+const onGreen = "bg-transparent text-[#7f9f76] border-[#7f9f76]";
+const offBtn = "bg-[#30302e] text-[#c2bfb4] border-[#46443f]";
 
 // スマホ向け操作リモコン。ボタンを押すと状態がサーバー同期される。
 export default function SharedController({ code }: { code: string }) {
@@ -99,7 +99,7 @@ export default function SharedController({ code }: { code: string }) {
       }`}
     >
       {sub && (
-        <b className="inline-flex h-[1.6em] min-w-[1.6em] items-center justify-center rounded-md bg-[#ffcc00] text-xl font-black text-[#0f0f0f]">
+        <b className="inline-flex h-[1.6em] min-w-[1.6em] items-center justify-center rounded-md bg-[#c96442] text-xl font-black text-[#262624]">
           {sub}
         </b>
       )}
@@ -152,7 +152,7 @@ export default function SharedController({ code }: { code: string }) {
 
   const Section = ({ name, children }: { name: string; children: React.ReactNode }) => (
     <div className="flex items-stretch gap-2">
-      <div className="flex w-10 shrink-0 items-center justify-center text-lg font-bold text-[#ffcc00]">
+      <div className="flex w-10 shrink-0 items-center justify-center text-lg font-bold text-[#c96442]">
         {name}
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-2">{children}</div>
@@ -163,7 +163,7 @@ export default function SharedController({ code }: { code: string }) {
     <div className="flex w-full flex-col gap-3 p-1">
       <div
         title={connected ? "同期中" : "未接続"}
-        className={`h-[3px] w-full rounded-full ${connected ? "bg-[#3fbf6f]" : "bg-[#555]"}`}
+        className={`h-[3px] w-full rounded-full ${connected ? "bg-[#7f9f76]" : "bg-[#54524c]"}`}
       />
 
       <Section name="GC1">{hontoUso("gc1")}</Section>

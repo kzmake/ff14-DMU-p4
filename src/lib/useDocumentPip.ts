@@ -60,7 +60,7 @@ export function useDocumentPip(opts?: { width?: number; height?: number; fontFac
     applyPipFont();
     pip.addEventListener("resize", applyPipFont);
     pip.document.body.style.margin = "0";
-    pip.document.body.style.background = "#0f0f0f";
+    pip.document.body.style.background = "#262624";
     pip.document.body.style.padding = "6px";
     const el = pip.document.createElement("div");
     el.style.width = "100%";

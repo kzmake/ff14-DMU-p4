@@ -4,8 +4,8 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background-color: #0f0f0f;
-  color: #ffffff;
+  background-color: #262624;
+  color: #e8e6dc;
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   overflow: hidden; /* 縦・横スクロールを完全に禁止 */
   width: 100vw;
