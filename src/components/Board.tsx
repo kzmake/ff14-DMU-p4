@@ -37,17 +37,28 @@ const offBtn = "bg-[#30302e] text-[#c2bfb4] border-[#46443f]";
 const cellBase =
   "flex flex-1 min-h-0 items-center justify-center rounded-md border-2 text-center text-[0.8rem] font-bold leading-[1.2] p-1 whitespace-pre-line";
 
-// 結果1列ぶん（空ならプレースホルダーをうっすら）。
-function ResultColumn({ placeholder, cells }: { placeholder: string; cells: ResultCell[] }) {
+// 結果1列ぶん（空ならプレースホルダーをうっすら）。square=true でセルを正方形に。
+function ResultColumn({
+  placeholder,
+  cells,
+  square,
+}: {
+  placeholder: string;
+  cells: ResultCell[];
+  square?: boolean;
+}) {
+  const cellSq = square ? "aspect-square flex-none" : "";
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-md border border-[#3a3834] bg-[rgba(255,255,255,0.03)] p-1">
       {cells.length === 0 ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center whitespace-pre-line rounded-md border-2 border-dashed border-[#34322e] text-center text-[0.7rem] font-semibold leading-[1.2] text-[#54524c]">
+        <div
+          className={`flex min-h-0 flex-1 items-center justify-center whitespace-pre-line rounded-md border-2 border-dashed border-[#34322e] text-center text-[0.7rem] font-semibold leading-[1.2] text-[#54524c] ${cellSq}`}
+        >
           {placeholder}
         </div>
       ) : (
         cells.map((c) => (
-          <div key={`${c.text}:${c.tone}`} className={`${cellBase} ${toneClass[c.tone]}`}>
+          <div key={`${c.text}:${c.tone}`} className={`${cellBase} ${cellSq} ${toneClass[c.tone]}`}>
             {c.text}
           </div>
         ))
@@ -56,13 +67,18 @@ function ResultColumn({ placeholder, cells }: { placeholder: string; cells: Resu
   );
 }
 
-// 結果5列（左から ①〜⑤）。盤面・PiP・結果ページで共通。
-export function SummaryView({ state }: { state: BoardState }) {
+// 結果5列（左から ①〜⑤）。盤面・PiP・結果ページで共通。square=true で各セル正方形。
+export function SummaryView({ state, square }: { state: BoardState; square?: boolean }) {
   const cols = resultColumns(state);
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-5 gap-[6px]">
+    <div className={`grid min-h-0 grid-cols-5 gap-[6px] ${square ? "items-start" : "flex-1"}`}>
       {cols.map((col) => (
-        <ResultColumn key={col.key} placeholder={col.placeholder} cells={col.cells} />
+        <ResultColumn
+          key={col.key}
+          placeholder={col.placeholder}
+          cells={col.cells}
+          square={square}
+        />
       ))}
     </div>
   );
@@ -76,6 +92,7 @@ function OptButton({
   active,
   big,
   disabled,
+  square,
   onClick,
 }: {
   label: string;
@@ -84,6 +101,7 @@ function OptButton({
   active: boolean;
   big?: boolean;
   disabled?: boolean;
+  square?: boolean;
   onClick?: () => void;
 }) {
   return (
@@ -91,9 +109,11 @@ function OptButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`flex h-full min-h-[44px] w-full min-w-0 cursor-pointer items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[10px] border-2 font-extrabold leading-[1.1] ${
-        big ? "text-[18px]" : "text-[16px]"
-      } ${disabled ? "cursor-default border-dashed" : ""} ${active ? onClass : offBtn}`}
+      className={`flex min-w-0 cursor-pointer items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[10px] border-2 font-extrabold leading-[1.1] ${
+        square ? "aspect-square h-auto w-full" : "h-full min-h-[44px] w-full"
+      } ${big ? "text-[18px]" : "text-[16px]"} ${
+        disabled ? "cursor-default border-dashed" : ""
+      } ${active ? onClass : offBtn}`}
     >
       {sub && (
         <b className="inline-flex h-[1.7em] min-w-[1.7em] items-center justify-center rounded-[7px] bg-[#c96442] text-[20px] font-black text-[#262624]">
@@ -115,9 +135,8 @@ export default function Board({
   onChange: (next: BoardState) => void;
   shareInfo?: { code: string; connected: boolean };
 }) {
-  // 結果エリアの高さ（px）。null は既定。本体と PiP で別々に保持。
-  const [resultH, setResultH] = useState<number | null>(null); // 本体
-  const [pipResultH, setPipResultH] = useState<number | null>(null); // PiP
+  // 結果エリアの高さ（px）。null は既定（本体のみリサイズ可）。
+  const [resultH, setResultH] = useState<number | null>(null);
 
   // 仕切りドラッグの共通実装。win=対象ウィンドウ、setH=高さ更新先。
   // reversed=true（記憶が上・結果が下）のときはドラッグ方向を反転する。
@@ -151,11 +170,6 @@ export default function Board({
   // 本体の仕切り（結果は常に上）。既定の結果高さ 28dvh に合わせる。
   const onDividerDown = (downY: number) =>
     startResize(downY, window, resultH, setResultH, false, 0.28);
-  // PiP の仕切り（PiP のウィンドウ基準。反転中は結果が下なので方向を反転）
-  const onPipDividerDown = (downY: number) => {
-    const win = pipContainer?.ownerDocument.defaultView;
-    if (win) startResize(downY, win, pipResultH, setPipResultH, pipFlip);
-  };
 
   // オーバーレイ(PiP)。記憶も含めるか・上下反転するかをトグルできる。
   const [pipContainer, setPipContainer] = useState<HTMLElement | null>(null);
@@ -239,10 +253,11 @@ export default function Board({
   const setAccel = (key: string) => onChange({ ...state, accel: state.accel === key ? null : key });
 
   // 加速ボタン（GC1/GC2 × 早/遅）。値=そのGCのホント/ウソに従う。
-  const accelBtn = (gc: GcKey, side: Side) => {
+  const accelBtn = (gc: GcKey, side: Side, sq?: boolean) => {
     const key = `${gc}:${side}`;
     return (
       <OptButton
+        square={sq}
         sub={side === "early" ? "早" : "遅"}
         label={state[gc] ? accelLabel(state, gc) : "動く"}
         onClass={onGreenOutline}
@@ -253,10 +268,11 @@ export default function Board({
   };
 
   // 雷水位置ボタン（GC1のみ連動）。
-  const sankaiBtn = (side: Side) => {
+  const sankaiBtn = (side: Side, sq?: boolean) => {
     const tone = state.gc1 ? raisuiTone(state, "gc1") : "blue";
     return (
       <OptButton
+        square={sq}
         sub={side === "early" ? "早" : "遅"}
         label={state.gc1 ? raisuiLabel(state, "gc1") : "雷水"}
         onClass={tone === "red" ? onRed : onBlue}
@@ -268,10 +284,11 @@ export default function Board({
 
   // GC2 雷水の連動表示（押せない）。GC1の早/遅選択で来る側だけ点灯。
   const linkedSide = linkedGc2Side(state);
-  const linkedBtn = (side: Side) => {
+  const linkedBtn = (side: Side, sq?: boolean) => {
     const isActive = side === linkedSide && state.gc2;
     return (
       <OptButton
+        square={sq}
         sub={side === "early" ? "早" : "遅"}
         label={isActive ? raisuiLabel(state, "gc2") : "雷水"}
         onClass={raisuiTone(state, "gc2") === "red" ? onRed : onBlue}
@@ -281,10 +298,11 @@ export default function Board({
     );
   };
 
-  const hontoUso = (key: "gc1" | "gc2" | "fire" | "tsunami") => (
+  const hontoUso = (key: "gc1" | "gc2" | "fire" | "tsunami", sq?: boolean) => (
     <>
       <OptButton
         big
+        square={sq}
         label="ホント"
         onClass={onBlue}
         active={state[key] === "honto"}
@@ -292,6 +310,7 @@ export default function Board({
       />
       <OptButton
         big
+        square={sq}
         label="ウソ"
         onClass={onRed}
         active={state[key] === "uso"}
@@ -306,32 +325,36 @@ export default function Board({
     </span>
   );
 
-  // 記憶（4行×6列）。盤面・PiP で共通利用。
-  const memoGrid = (
-    <div className="grid min-h-0 flex-1 grid-cols-[1.6em_1fr_1fr_1.6em_1fr_1fr] grid-rows-4 gap-1.5">
+  // 記憶（4行×6列）。盤面・PiP で共通利用。sq=true でボタンを正方形に。
+  const memoGrid = (sq?: boolean) => (
+    <div
+      className={`grid grid-cols-[1.6em_1fr_1fr_1.6em_1fr_1fr] gap-1.5 ${
+        sq ? "items-center content-start" : "min-h-0 flex-1 grid-rows-4"
+      }`}
+    >
       <RowLabel>GC1</RowLabel>
-      {hontoUso("gc1")}
+      {hontoUso("gc1", sq)}
       <RowLabel>GC2</RowLabel>
-      {hontoUso("gc2")}
+      {hontoUso("gc2", sq)}
 
       <RowLabel>加速</RowLabel>
-      {accelBtn("gc1", "early")}
-      {accelBtn("gc1", "late")}
+      {accelBtn("gc1", "early", sq)}
+      {accelBtn("gc1", "late", sq)}
       <RowLabel>加速</RowLabel>
-      {accelBtn("gc2", "early")}
-      {accelBtn("gc2", "late")}
+      {accelBtn("gc2", "early", sq)}
+      {accelBtn("gc2", "late", sq)}
 
       <RowLabel>雷水</RowLabel>
-      {sankaiBtn("early")}
-      {sankaiBtn("late")}
+      {sankaiBtn("early", sq)}
+      {sankaiBtn("late", sq)}
       <RowLabel>雷水</RowLabel>
-      {linkedBtn("early")}
-      {linkedBtn("late")}
+      {linkedBtn("early", sq)}
+      {linkedBtn("late", sq)}
 
       <RowLabel>🔥</RowLabel>
-      {hontoUso("fire")}
+      {hontoUso("fire", sq)}
       <RowLabel>🌊</RowLabel>
-      {hontoUso("tsunami")}
+      {hontoUso("tsunami", sq)}
     </div>
   );
 
@@ -433,35 +456,16 @@ export default function Board({
       </div>
 
       {/* 記憶（下）：4行×6列。本体は常に表示（PiPに出していても残す） */}
-      {memoGrid}
+      {memoGrid()}
 
       {/* PiP 小窓：結果（＋記憶も表示ON時は記憶）を描画。state と自動同期・操作可 */}
       {pipContainer &&
         createPortal(
           <>
-            <div
-              className="flex shrink-0 flex-col rounded-lg border-2 border-[#c96442] bg-[rgba(201,100,66,0.06)] p-1.5"
-              style={{
-                height: pipMemo ? (pipResultH != null ? `${pipResultH}px` : "40%") : "100%",
-              }}
-            >
-              <SummaryView state={state} />
+            <div className="flex shrink-0 flex-col rounded-lg border-2 border-[#c96442] bg-[rgba(201,100,66,0.06)] p-1.5">
+              <SummaryView state={state} square />
             </div>
-            {pipMemo && (
-              <>
-                <div
-                  className="flex shrink-0 cursor-row-resize items-center justify-center py-[2px]"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    onPipDividerDown(e.clientY);
-                  }}
-                  onTouchStart={(e) => onPipDividerDown(e.touches[0].clientY)}
-                >
-                  <span className="h-[4px] w-12 rounded-full bg-[#54524c] hover:bg-[#c96442]" />
-                </div>
-                {memoGrid}
-              </>
-            )}
+            {pipMemo && <div className="shrink-0">{memoGrid(true)}</div>}
           </>,
           pipContainer,
         )}
