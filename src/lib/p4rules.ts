@@ -36,7 +36,7 @@ export const raisuiTone = (s: BoardState, gc: GcKey): Tone => (s[gc] === "uso" ?
 export const raisuiLabel = (s: BoardState, gc: GcKey): string =>
   s[gc] === "uso" ? "水散会" : "雷散会";
 export const accelLabel = (s: BoardState, gc: GcKey): string =>
-  s[gc] === "uso" ? "動かない" : "動く";
+  s[gc] === "uso" ? "止まる" : "動く";
 
 // 1-a: sankai='early' → 早=GC1・遅=GC2 ／ 'late' → 早=GC2・遅=GC1。
 // その side に来る雷水の GC を返す（未選択は null）。

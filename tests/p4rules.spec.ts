@@ -45,7 +45,7 @@ const CASES: { name: string; input: Partial<BoardState>; expect: string[] }[] = 
   {
     name: "gc1=uso, sankai=early, accel=gc1:late",
     input: { gc1: "uso", sankai: "early", accel: "gc1:late" },
-    expect: ["水散会(red)", "みる(outline-red)", "-", "動かない(outline-green)", "-"],
+    expect: ["水散会(red)", "みる(outline-red)", "-", "止まる(outline-green)", "-"],
   },
   {
     name: "fire=honto",
