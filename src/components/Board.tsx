@@ -196,8 +196,16 @@ export default function Board({
     };
     applyPipFont();
     pip.addEventListener("resize", applyPipFont);
-    pip.document.body.style.cssText =
-      "margin:0;background:#262624;padding:6px;height:100dvh;display:flex;overflow:hidden;";
+    // PiP窓フォーカス時のキー入力を握りつぶす（誤操作・ショートカット暴発を防ぐ）。
+    // ※Web側のイベントのみ。別アプリ(ゲーム本体)へのキー配送は制御不可。
+    const swallowKey = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    for (const t of ["keydown", "keyup", "keypress"] as const) {
+      pip.addEventListener(t, swallowKey, true);
+    }
+    ("margin:0;background:#262624;padding:6px;height:100dvh;display:flex;overflow:hidden;");
     // 結果＋記憶はこの el の flex子。flip は el の flex-direction を切り替える。
     const el = pip.document.createElement("div");
     el.style.cssText = `display:flex;flex-direction:${
