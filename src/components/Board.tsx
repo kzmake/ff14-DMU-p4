@@ -1,472 +1,111 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
-import { type BoardState, INITIAL_BOARD_STATE } from "@/lib/boardState";
-import { applyMarkToggle } from "@/lib/marks";
+import {
+  accelLabel,
+  type BoardState,
+  type GcKey,
+  INITIAL_BOARD_STATE,
+  linkedGc2Side,
+  type ResultCell,
+  raisuiLabel,
+  raisuiTone,
+  resultColumns,
+  type Side,
+  type Tone,
+} from "@/lib/p4rules";
 
 export { type BoardState, INITIAL_BOARD_STATE };
 
-// Document Picture-in-Picture API（Chrome系のみ。型定義が無いので最小限で宣言）
-declare global {
-  interface Window {
-    documentPictureInPicture?: {
-      requestWindow: (opts?: { width?: number; height?: number }) => Promise<Window>;
-      window: Window | null;
-    };
-  }
-}
-
-export type Tone = "blue" | "red" | "thunder" | "ice" | "both" | "safe" | "green";
-
-// 横＝列（画像準拠）。先頭の本体列が操作、右側は表示専用。
-// personal: 個人ギミック（自分の早/遅デバフ依存）。トグルで非表示にできる。
-const COLUMNS = [
-  { key: "boss", label: "🤡本体", group: "" },
-  // 早グループ（個人ギミックは狭く）。加速＋雷水を1列に集約
-  { key: "e-accel", label: "加速・⚡💧", group: "早", personal: true, narrow: true },
-  { key: "e-look", label: "👁視線", group: "早", narrow: true },
-  // 炎
-  { key: "fire", label: "🔥", group: "" },
-  // 遅グループ（個人ギミックは狭く）。加速＋雷水を1列に集約
-  { key: "l-accel", label: "加速・⚡💧", group: "遅", personal: true, narrow: true },
-  { key: "l-look", label: "👁視線", group: "遅", narrow: true },
-  // つなみ
-  { key: "tsunami", label: "🌊", group: "" },
-] as const;
-
-type ColKey = (typeof COLUMNS)[number]["key"];
-type ResultColKey = Exclude<ColKey, "boss">;
-
-// 結果セル。alt がある場合は「ほんと時／ウソ時」の2候補を枠線だけで並べて表示。
-type ResultCell = {
-  action: string;
-  tone: Tone;
-  // ウソ（対照）時の結果。あると2候補表示になる。
-  alt?: { action: string; tone: Tone };
-  // 塗りつぶしなし・枠線だけで表示する（例：ふまない）
-  outline?: boolean;
-  // 1セルに複数結果を縦積みで表示（例：加速＋雷水）。指定時は action/tone より優先。
-  stack?: { action: string; tone: Tone }[];
-};
-
-// 本体列のボタン1つ。押すと results の各列に結果が表示される。
-export type Option = {
-  key: string;
-  label: string;
-  tone: Tone;
-  results: Partial<Record<ResultColKey, ResultCell>>;
-};
-
-// 縦＝判断していく行
-export type Row = {
-  id: string;
-  name: string;
-  cols: number; // 本体列ボタンのグリッド列数
-  options: Option[];
-  // ほのお/つなみ用：指定した行と逆の種別だけを選べるようにする
-  mirrorOf?: string;
-};
-
-// option.key から種別（fire / tsunami）を取り出す
-export const elementKind = (optionKey: string): "fire" | "tsunami" | null =>
-  optionKey.startsWith("fire") ? "fire" : optionKey.startsWith("tsunami") ? "tsunami" : null;
-
-export const ROWS: Row[] = [
-  {
-    id: "gc1",
-    name: "GC1",
-    cols: 1,
-    options: [
-      {
-        key: "honto",
-        label: "ホント",
-        tone: "blue",
-        results: {
-          "e-accel": {
-            action: "動かない",
-            tone: "green",
-            stack: [
-              { action: "動かない", tone: "green" },
-              { action: "雷さんかい", tone: "blue" },
-            ],
-          },
-          "e-look": { action: "見ない", tone: "blue" },
-          // この時点で早/遅が分かるので遅の個人ギミックも表示
-          "l-accel": {
-            action: "動かない",
-            tone: "green",
-            stack: [
-              { action: "動かない", tone: "green" },
-              { action: "雷さんかい", tone: "blue" },
-            ],
-          },
-        },
-      },
-      {
-        key: "uso",
-        label: "ウソ",
-        tone: "red",
-        results: {
-          "e-accel": {
-            action: "動く",
-            tone: "green",
-            stack: [
-              { action: "動く", tone: "green" },
-              { action: "水さんかい", tone: "red" },
-            ],
-          },
-          "e-look": { action: "見る", tone: "red", outline: true },
-          "l-accel": {
-            action: "動く",
-            tone: "green",
-            stack: [
-              { action: "動く", tone: "green" },
-              { action: "水さんかい", tone: "red" },
-            ],
-          },
-        },
-      },
-    ],
-  },
-  {
-    id: "fire",
-    name: "🔥",
-    cols: 2,
-    options: [
-      {
-        key: "fire-honto",
-        label: "ホント",
-        tone: "blue",
-        results: { fire: { action: "🔥離れる", tone: "blue" } },
-      },
-      {
-        key: "fire-uso",
-        label: "ウソ",
-        tone: "red",
-        results: { fire: { action: "🔥集合", tone: "red", outline: true } },
-      },
-    ],
-  },
-  {
-    id: "gc2",
-    name: "GC2",
-    cols: 1,
-    options: [
-      {
-        key: "honto",
-        label: "ホント",
-        tone: "blue",
-        results: {
-          "e-accel": {
-            action: "動かない",
-            tone: "green",
-            stack: [
-              { action: "動かない", tone: "green" },
-              { action: "雷さんかい", tone: "blue" },
-            ],
-          },
-          "l-accel": {
-            action: "動かない",
-            tone: "green",
-            stack: [
-              { action: "動かない", tone: "green" },
-              { action: "雷さんかい", tone: "blue" },
-            ],
-          },
-          "l-look": { action: "見ない", tone: "blue" },
-        },
-      },
-      {
-        key: "uso",
-        label: "ウソ",
-        tone: "red",
-        results: {
-          "e-accel": {
-            action: "動く",
-            tone: "green",
-            stack: [
-              { action: "動く", tone: "green" },
-              { action: "水さんかい", tone: "red" },
-            ],
-          },
-          "l-accel": {
-            action: "動く",
-            tone: "green",
-            stack: [
-              { action: "動く", tone: "green" },
-              { action: "水さんかい", tone: "red" },
-            ],
-          },
-          "l-look": { action: "見る", tone: "red", outline: true },
-        },
-      },
-    ],
-  },
-  {
-    id: "tsunami",
-    name: "🌊",
-    cols: 2,
-    options: [
-      {
-        key: "tsunami-honto",
-        label: "ホント",
-        tone: "blue",
-        results: { tsunami: { action: "🌊集合", tone: "blue", outline: true } },
-      },
-      {
-        key: "tsunami-uso",
-        label: "ウソ",
-        tone: "red",
-        results: { tsunami: { action: "🌊離れる", tone: "red" } },
-      },
-    ],
-  },
-  {
-    id: "charge-thunder",
-    name: "⚡",
-    cols: 2,
-    options: [
-      {
-        key: "honto",
-        label: "ふまない",
-        tone: "blue",
-        results: { tsunami: { action: "⚡ふまない", tone: "blue", outline: true } },
-      },
-      {
-        key: "uso",
-        label: "ふむ",
-        tone: "red",
-        results: { tsunami: { action: "⚡ふむ", tone: "red" } },
-      },
-    ],
-  },
-  {
-    id: "charge-ice",
-    name: "🧊",
-    cols: 2,
-    options: [
-      {
-        key: "honto",
-        label: "ふまない",
-        tone: "blue",
-        results: { tsunami: { action: "🧊ふまない", tone: "blue", outline: true } },
-      },
-      {
-        key: "uso",
-        label: "ふむ",
-        tone: "red",
-        results: { tsunami: { action: "🧊ふむ", tone: "red" } },
-      },
-    ],
-  },
-];
-
-// 選択中ボタン・結果セルの塗りつぶし配色（Tailwind 任意値で元の色を維持）
-export const toneClass: Record<Tone, string> = {
+// トーン→クラス。塗り（雷=青/水=赤）と枠線だけ（何もしない・個人ギミック）。
+const toneClass: Record<Tone, string> = {
   blue: "bg-[#4dadff] text-white border-[#3399ff]",
   red: "bg-[#ff4d4d] text-white border-[#ff3333]",
-  thunder: "bg-[#a64dff] text-white border-[#8a2be2]",
-  ice: "bg-[#eaf7ff] text-[#2a5a6e] border-[#bfe6f5]",
-  both: "bg-[#ff9933] text-black border-[#e67e00]",
-  safe: "bg-[#4ddd7e] text-[#003311] border-[#2fbf5f]",
   green: "bg-[#3fbf6f] text-white border-[#2fa85c]",
+  "outline-blue": "bg-transparent text-[#8fcaff] border-[#4dadff]",
+  "outline-red": "bg-transparent text-[#ff9999] border-[#ff4d4d]",
+  "outline-green": "bg-transparent text-[#8fe6ad] border-[#3fbf6f]",
 };
 
-// 塗りつぶしなし・枠線だけ版（2候補表示用）
-const outlineClass: Record<Tone, string> = {
-  blue: "bg-transparent text-[#8fcaff] border-[1.5px] border-[#4dadff]",
-  red: "bg-transparent text-[#ff9999] border-[1.5px] border-[#ff4d4d]",
-  thunder: "bg-transparent text-[#c79bff] border-[1.5px] border-[#a64dff]",
-  ice: "bg-transparent text-[#cdeeff] border-[1.5px] border-[#bfe6f5]",
-  both: "bg-transparent text-[#ffc080] border-[1.5px] border-[#ff9933]",
-  safe: "bg-transparent text-[#8fe8b0] border-[1.5px] border-[#4ddd7e]",
-  green: "bg-transparent text-[#7fd9a0] border-[1.5px] border-[#3fbf6f]",
-};
+// ボタンの選択中クラス（ホント=青/ウソ=赤）。
+const onBlue = "bg-[#4dadff] text-white border-[#3399ff]";
+const onRed = "bg-[#ff4d4d] text-white border-[#ff3333]";
+const onGreenOutline = "bg-transparent text-[#3fbf6f] border-[#3fbf6f]";
+const offBtn = "bg-[#222] text-[#ccc] border-[#444]";
 
-// フォントサイズ（大中小）。html の --font-scale に「実効dvh値」を渡す。
-// 基準が 1dvh なので、この値がそのまま root font-size の dvh になる。
-// iPad mini で崩れない上限を実測した値（大=3.2 / 中=3.0 / 小=2.8）。
-type FontSize = "small" | "medium" | "large";
-const FONT_SCALE: Record<FontSize, number> = {
-  small: 2.8,
-  medium: 3.0,
-  large: 3.2,
-};
-const FONT_OPTIONS: { key: FontSize; label: string }[] = [
-  { key: "large", label: "大" },
-  { key: "medium", label: "中" },
-  { key: "small", label: "小" },
-];
+const cellBase =
+  "flex flex-1 min-h-0 items-center justify-center rounded-md border-2 text-center text-[0.8rem] font-bold leading-[1.2] p-1 whitespace-pre-line";
 
-// 結果セル共通レイアウト（中央寄せ・枠線等）
-const linkedResultBase =
-  "flex flex-1 min-h-0 items-center justify-center text-center text-[0.77rem] font-bold rounded leading-[1.15] p-px whitespace-pre-line break-all";
-
-// 結果列だけ（本体=boss を除く）
-const RESULT_COLS = COLUMNS.filter((c) => c.key !== "boss") as readonly {
-  key: ResultColKey;
-  label: string;
-  group: string;
-}[];
-
-// 状態から「最終結果」セルの表示項目を列ごとに計算する（描画とは独立）。
-// 雷水を上・加速を下に並べ替え済み。点灯マーカーだけを集約する。
-function computeSummaryItems(
-  state: BoardState,
-  col: ResultColKey,
-): { s: { action: string; tone: Tone }; outline: boolean }[] {
-  const { selections, marks, showCharge } = state;
-  const visibleRows = ROWS.filter((row) => showCharge || !row.id.startsWith("charge-"));
-
-  const activeResultOf = (row: Row): Option | null => {
-    const activeKey = selections[row.id] ?? null;
-    let opts = row.options;
-    if (row.mirrorOf) {
-      const srcKey = selections[row.mirrorOf] ?? null;
-      const srcKind = srcKey ? elementKind(srcKey) : null;
-      if (!srcKind) return null;
-      const wantKind = srcKind === "fire" ? "tsunami" : "fire";
-      opts = row.options.filter((o) => elementKind(o.key) === wantKind);
-    }
-    return opts.find((o) => o.key === activeKey) ?? null;
-  };
-
-  const cells = visibleRows
-    .map((row) => {
-      const cell = activeResultOf(row)?.results[col] ?? null;
-      return cell ? { rowId: row.id, cell } : null;
-    })
-    .filter((x): x is { rowId: string; cell: ResultCell } => x !== null);
-
-  const raw = cells.flatMap(({ rowId, cell }) => {
-    if (cell.stack) {
-      // i=0=加速, i=1=雷水。点灯したものだけ、種別(rank)付きで返す。
-      return cell.stack
-        .map((s, i) => ({
-          s,
-          outline: false,
-          rank: i === 1 ? 0 : 1, // 雷水=0(上), 加速=1(下)
-          lit: marks[`${rowId}:${col}:${i}`],
-        }))
-        .filter((x) => x.lit);
-    }
-    return [{ s: { action: cell.action, tone: cell.tone }, outline: !!cell.outline, rank: 0 }];
-  });
-  return raw
-    .slice()
-    .sort((a, b) => a.rank - b.rank)
-    .map(({ s, outline }) => ({ s, outline }));
-}
-
-// 「最終結果」だけを描画する読み取り専用ビュー。
-//  - variant="full": 列ラベル付きで画面いっぱい（/share/[code]/result 用）
-//  - variant="pip" : ラベル無しのコンパクト（PiP小窓用）
-export function SummaryView({
-  state,
-  variant,
-}: {
-  state: BoardState;
-  variant: "full" | "pip";
-}) {
-  const gridCols = `repeat(${RESULT_COLS.length}, 1fr)`;
-  if (variant === "pip") {
-    return (
-      <div className="grid h-full w-full gap-[3px]" style={{ gridTemplateColumns: gridCols }}>
-        {RESULT_COLS.map((col) => (
-          <SummaryCell key={col.key} items={computeSummaryItems(state, col.key)} />
-        ))}
-      </div>
-    );
-  }
-  // full: 列見出し + セル
+// 結果1列ぶん（空ならプレースホルダーをうっすら）。
+function ResultColumn({ placeholder, cells }: { placeholder: string; cells: ResultCell[] }) {
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col gap-[3px]">
-      <div className="grid shrink-0 gap-[3px]" style={{ gridTemplateColumns: gridCols }}>
-        {RESULT_COLS.map((col) => (
-          <div
-            key={col.key}
-            className="flex items-center justify-center rounded-[3px] bg-[rgba(255,204,0,0.08)] px-px py-[2px] text-center text-[min(2dvh,15px)] font-bold leading-[1.1] text-[#ffcc00]"
-          >
-            {col.label}
-          </div>
-        ))}
-      </div>
-      <div className="grid min-h-0 flex-1 gap-[3px]" style={{ gridTemplateColumns: gridCols }}>
-        {RESULT_COLS.map((col) => (
-          <SummaryCell key={col.key} items={computeSummaryItems(state, col.key)} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// 最終結果の1列ぶんのセル（共通描画）
-function SummaryCell({
-  items,
-}: {
-  items: { s: { action: string; tone: Tone }; outline: boolean }[];
-}) {
-  return (
-    <div className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]">
-      {items.length === 0 ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.7rem] text-[#3a3a3a]">
-          ·
+    <div className="flex min-w-0 flex-col gap-1 rounded-md border border-[#333] bg-[rgba(255,255,255,0.03)] p-1">
+      {cells.length === 0 ? (
+        <div className="flex min-h-0 flex-1 items-center justify-center whitespace-pre-line rounded-md border-2 border-dashed border-[#2c2c2c] text-center text-[0.7rem] font-semibold leading-[1.2] text-[#555]">
+          {placeholder}
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-[3px]">
-          {items.map(({ s, outline }, i) => (
-            <div
-              key={i}
-              className={`${linkedResultBase} ${outline ? outlineClass[s.tone] : toneClass[s.tone]}`}
-            >
-              {s.action}
-            </div>
-          ))}
-        </div>
+        cells.map((c) => (
+          <div key={`${c.text}:${c.tone}`} className={`${cellBase} ${toneClass[c.tone]}`}>
+            {c.text}
+          </div>
+        ))
       )}
     </div>
   );
 }
 
-// 小さなトグルスイッチ（個人ギミックと同デザイン）。表の上部の表示切替に使う。
-function RowToggle({
+// 結果5列（左から ①〜⑤）。盤面・PiP・結果ページで共通。
+export function SummaryView({ state }: { state: BoardState }) {
+  const cols = resultColumns(state);
+  return (
+    <div className="grid min-h-0 flex-1 grid-cols-5 gap-[6px]">
+      {cols.map((col) => (
+        <ResultColumn key={col.key} placeholder={col.placeholder} cells={col.cells} />
+      ))}
+    </div>
+  );
+}
+
+// 記憶のボタン（早/遅タグ付き or ホント/ウソ）。
+function OptButton({
   label,
-  checked,
-  onChange,
+  sub,
+  onClass,
+  active,
+  big,
+  disabled,
+  onClick,
 }: {
   label: string;
-  checked: boolean;
-  onChange: () => void;
+  sub?: string; // 早/遅 タグ
+  onClass: string;
+  active: boolean;
+  big?: boolean;
+  disabled?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
       type="button"
-      role="switch"
-      aria-checked={checked}
-      className="group inline-flex cursor-pointer items-center gap-1.5 border-none bg-transparent p-0"
-      onClick={onChange}
+      disabled={disabled}
+      onClick={onClick}
+      className={`flex h-full min-h-[44px] w-full min-w-0 cursor-pointer items-center justify-center gap-1.5 overflow-hidden whitespace-nowrap rounded-[10px] border-2 font-extrabold leading-[1.1] ${
+        big ? "text-[18px]" : "text-[16px]"
+      } ${disabled ? "cursor-default border-dashed" : ""} ${active ? onClass : offBtn}`}
     >
-      <span className={`text-[0.85em] font-bold ${checked ? "text-[#ffcc00]" : "text-[#aaa]"}`}>
-        {label}
-      </span>
-      <span
-        className={`relative h-[16px] w-[30px] rounded-[8px] border transition-[background,border-color] duration-150 ${
-          checked ? "border-[#e6b800] bg-[#ffcc00]" : "border-[#555] bg-[#444]"
-        }`}
-      >
-        <span
-          className={`absolute top-px left-px h-[12px] w-[12px] rounded-full transition-[transform,background] duration-150 ${
-            checked ? "translate-x-[14px] bg-[#0f0f0f]" : "bg-[#ccc]"
-          }`}
-        />
-      </span>
+      {sub && (
+        <b className="inline-flex h-[1.7em] min-w-[1.7em] items-center justify-center rounded-[7px] bg-[#ffcc00] text-[20px] font-black text-[#0f0f0f]">
+          {sub}
+        </b>
+      )}
+      <span>{label}</span>
     </button>
   );
 }
 
-// 盤面本体。状態は controlled（state と onChange を外部から注入）。
-// ローカルページと共有ページの両方から使う。
+// 盤面本体。状態は controlled。
 export default function Board({
   state,
   onChange,
@@ -474,51 +113,47 @@ export default function Board({
 }: {
   state: BoardState;
   onChange: (next: BoardState) => void;
-  // 共有ページのとき、ヘッダーに表示する情報（コード等）。未指定ならローカル扱い。
   shareInfo?: { code: string; connected: boolean };
 }) {
-  const { selections, marks, dimmedMarks, showPersonal, showTimeline, showCharge } = state;
+  // 結果エリアの高さ（px）。null は既定の 40dvh。仕切りドラッグで変える。
+  const [resultH, setResultH] = useState<number | null>(null);
 
-  // フルスクリーン状態（ローカルのみ）
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  // フォントサイズ（大中小）。既定は大。（ローカルのみ）
-  const [fontSize, setFontSize] = useState<FontSize>("large");
-  // Document PiP（最終結果を最前面の小窓に出す）。開いている間だけ container を保持。
-  const [pipContainer, setPipContainer] = useState<HTMLElement | null>(null);
-
-  // 選択したフォントサイズを html の --font-scale に反映
-  useEffect(() => {
-    document.documentElement.style.setProperty("--font-scale", String(FONT_SCALE[fontSize]));
-  }, [fontSize]);
-
-  // フルスクリーン状態の変化を監視（Escでの解除なども反映）
-  useEffect(() => {
-    const onFsChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
-    document.addEventListener("fullscreenchange", onFsChange);
-    return () => document.removeEventListener("fullscreenchange", onFsChange);
-  }, []);
-
-  const toggleFullscreen = () => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      document.documentElement.requestFullscreen?.();
-    }
+  // 仕切りドラッグ：結果エリアの高さを上下リサイズ。
+  const onDividerDown = (downY: number) => {
+    const startH = resultH ?? window.innerHeight * 0.4;
+    const move = (clientY: number) => {
+      const h = Math.max(60, Math.min(window.innerHeight - 120, startH + (clientY - downY)));
+      setResultH(h);
+    };
+    const mm = (e: MouseEvent) => move(e.clientY);
+    const tm = (e: TouchEvent) => move(e.touches[0].clientY);
+    const up = () => {
+      window.removeEventListener("mousemove", mm);
+      window.removeEventListener("mouseup", up);
+      window.removeEventListener("touchmove", tm);
+      window.removeEventListener("touchend", up);
+    };
+    window.addEventListener("mousemove", mm);
+    window.addEventListener("mouseup", up);
+    window.addEventListener("touchmove", tm, { passive: true });
+    window.addEventListener("touchend", up);
   };
 
-  // 最終結果を Document PiP（常に最前面の小窓）で開く／閉じる
-  const togglePip = async () => {
+  // オーバーレイ(PiP)。記憶も含めるか・上下反転するかをトグルできる。
+  const [pipContainer, setPipContainer] = useState<HTMLElement | null>(null);
+  const [pipMemo, setPipMemo] = useState(false); // 記憶も表示
+  const [pipFlip, setPipFlip] = useState(false); // 上下反転
+  const pipOpen = pipContainer !== null;
+
+  const openPip = async (withMemo: boolean, flip: boolean) => {
     const dpip = window.documentPictureInPicture;
     if (!dpip) {
       alert("この機能はDocument Picture-in-Picture対応ブラウザ（Chrome系）でのみ使えます。");
       return;
     }
-    if (dpip.window) {
-      dpip.window.close();
-      return;
-    }
-    const pip = await dpip.requestWindow({ width: 480, height: 160 });
-    // 親ページのスタイル（Tailwind等）を小窓へコピー
+    if (dpip.window) dpip.window.close();
+    const pip = await dpip.requestWindow({ width: 480, height: withMemo ? 360 : 150 });
+    // 親のスタイルを小窓へコピー
     for (const sheet of Array.from(document.styleSheets)) {
       try {
         const css = Array.from(sheet.cssRules)
@@ -528,7 +163,6 @@ export default function Board({
         style.textContent = css;
         pip.document.head.appendChild(style);
       } catch {
-        // CORS で読めない外部シートはリンクで取り込む
         if (sheet.href) {
           const link = pip.document.createElement("link");
           link.rel = "stylesheet";
@@ -537,448 +171,238 @@ export default function Board({
         }
       }
     }
-    // 小窓は dvh が極小（高さ160px）になり文字が潰れるので、root font-size を
-    // 小窓の高さ基準のpx固定にする（rem系のセル文字が大きく表示される）。
-    const applyPipFont = () => {
-      const h = pip.innerHeight || 160;
-      // 高さに比例（おおむね本体の見やすさに合わせた係数）。下限14px。
-      const px = Math.max(14, Math.round(h * 0.16));
-      pip.document.documentElement.style.fontSize = `${px}px`;
-    };
-    applyPipFont();
-    pip.addEventListener("resize", applyPipFont);
-    pip.document.body.style.margin = "0";
-    pip.document.body.style.background = "#0f0f0f";
-    pip.document.body.style.padding = "6px";
-    const container = pip.document.createElement("div");
-    container.style.width = "100%";
-    container.style.height = "100%";
-    pip.document.body.appendChild(container);
+    pip.document.body.style.cssText =
+      "margin:0;background:#0f0f0f;padding:6px;height:100dvh;display:flex;overflow:hidden;";
+    // 結果＋記憶はこの el の flex子。flip は el の flex-direction を切り替える。
+    const el = pip.document.createElement("div");
+    el.style.cssText = `display:flex;flex-direction:${
+      flip ? "column-reverse" : "column"
+    };gap:6px;min-height:0;flex:1;width:100%;`;
+    pip.document.body.appendChild(el);
     pip.addEventListener("pagehide", () => setPipContainer(null));
-    setPipContainer(container);
+    setPipContainer(el);
   };
 
-  // 雷水/加速マーカーのトグル（ロジックは @/lib/marks に集約。Controller と共有）
-  const toggleMark = (id: string) => {
-    const { marks: nextMarks, dimmedMarks: nextDimmed } = applyMarkToggle(state, id);
-    onChange({ ...state, marks: nextMarks, dimmedMarks: nextDimmed });
+  const togglePip = () => {
+    if (window.documentPictureInPicture?.window) {
+      window.documentPictureInPicture.window.close();
+      return;
+    }
+    openPip(pipMemo, pipFlip);
+  };
+  // 開いている最中にトグルを変えたら開き直す
+  const reopenIfOpen = (withMemo: boolean, flip: boolean) => {
+    if (pipOpen) openPip(withMemo, flip);
   };
 
-  const setSelect = (rowId: string, optionKey: string) => {
-    onChange({
-      ...state,
-      selections: {
-        ...selections,
-        // 同じ選択肢をもう一度押したらトグルで解除
-        [rowId]: selections[rowId] === optionKey ? null : optionKey,
-      },
-    });
-  };
+  // ホント/ウソ等を選ぶ（同じ値の再押下で解除）。
+  const setChoice = (key: "gc1" | "gc2" | "fire" | "tsunami", v: "honto" | "uso") =>
+    onChange({ ...state, [key]: state[key] === v ? null : v });
+  const setSankai = (v: Side) => onChange({ ...state, sankai: state.sankai === v ? null : v });
+  // 加速は4択中1つだけ（再押下で解除）。
+  const setAccel = (key: string) => onChange({ ...state, accel: state.accel === key ? null : key });
 
-  const resetAll = () => {
-    onChange({ ...state, selections: {}, marks: {}, dimmedMarks: {} });
-  };
-
-  // 加速列(e-accel/l-accel)は雷水を常に出すため列ごとは隠さない。
-  // 個人ギミックOFFのときは列内の「加速(動く/動かない)」サブセルだけを隠す。
-  const visibleColumns = COLUMNS;
-  const resultCols = visibleColumns.filter((c) => c.key !== "boss") as readonly {
-    key: ResultColKey;
-    label: string;
-    group: string;
-  }[];
-  // グリッドの列幅（行見出し + 各列）。
-  // タイムライン列はすべて等幅（narrow 指定は無視）。
-  const gridTemplate = `2.8rem ${visibleColumns.map(() => "1fr").join(" ")}`;
-
-  // 表示中の行（⚡🧊トグル反映）
-  const visibleRows = ROWS.filter((row) => showCharge || !row.id.startsWith("charge-"));
-
-  // 最終結果グリッド（インライン表示・PiP小窓）。集約ロジックは共通関数を再利用。
-  const summaryGrid = (variant: "inline" | "pip") => {
-    if (variant === "pip") return <SummaryView state={state} variant="pip" />;
-    // inline: 行見出し「最終結果」＋ 空の本体列 ＋ 各結果列
+  // 加速ボタン（GC1/GC2 × 早/遅）。値=そのGCのホント/ウソに従う。
+  const accelBtn = (gc: GcKey, side: Side) => {
+    const key = `${gc}:${side}`;
     return (
-      <div
-        className="grid min-h-0 flex-1 gap-[3px] rounded border border-[#ffcc00] bg-[rgba(255,204,0,0.06)]"
-        style={{ gridTemplateColumns: gridTemplate }}
-      >
-        <div
-          className="flex items-center justify-center border-l-2 border-[#ffcc00] px-px text-center font-bold leading-[1.1] text-[#ffcc00]"
-          style={{ fontSize: "min(1.5dvh, 11px)" }}
-        >
-          最終結果
-        </div>
-        {/* 本体（記憶）列は空白 */}
-        <div className="min-w-0 rounded" />
-        {resultCols.map((col) => (
-          <SummaryCell key={col.key} items={computeSummaryItems(state, col.key)} />
-        ))}
-      </div>
+      <OptButton
+        sub={side === "early" ? "早" : "遅"}
+        label={state[gc] ? accelLabel(state, gc) : "動く"}
+        onClass={onGreenOutline}
+        active={state.accel === key}
+        onClick={() => setAccel(key)}
+      />
     );
   };
 
-  return (
+  // 雷水位置ボタン（GC1のみ連動）。
+  const sankaiBtn = (side: Side) => {
+    const tone = state.gc1 ? raisuiTone(state, "gc1") : "blue";
+    return (
+      <OptButton
+        sub={side === "early" ? "早" : "遅"}
+        label={state.gc1 ? raisuiLabel(state, "gc1") : "雷水"}
+        onClass={tone === "red" ? onRed : onBlue}
+        active={state.sankai === side}
+        onClick={() => setSankai(side)}
+      />
+    );
+  };
+
+  // GC2 雷水の連動表示（押せない）。GC1の早/遅選択で来る側だけ点灯。
+  const linkedSide = linkedGc2Side(state);
+  const linkedBtn = (side: Side) => {
+    const isActive = side === linkedSide && state.gc2;
+    return (
+      <OptButton
+        sub={side === "early" ? "早" : "遅"}
+        label={isActive ? raisuiLabel(state, "gc2") : "雷水"}
+        onClass={raisuiTone(state, "gc2") === "red" ? onRed : onBlue}
+        active={!!isActive}
+        disabled
+      />
+    );
+  };
+
+  const hontoUso = (key: "gc1" | "gc2" | "fire" | "tsunami") => (
     <>
-      {/* ヘッダー：本文(4dvh)に引きずられないよう 2dvh 基準。子は em で追従 */}
+      <OptButton
+        big
+        label="ホント"
+        onClass={onBlue}
+        active={state[key] === "honto"}
+        onClick={() => setChoice(key, "honto")}
+      />
+      <OptButton
+        big
+        label="ウソ"
+        onClass={onRed}
+        active={state[key] === "uso"}
+        onClick={() => setChoice(key, "uso")}
+      />
+    </>
+  );
+
+  const RowLabel = ({ children }: { children: React.ReactNode }) => (
+    <span className="flex items-center justify-center text-center text-[14px] font-extrabold leading-[1.1] text-[#ffcc00]">
+      {children}
+    </span>
+  );
+
+  // 記憶（4行×6列）。盤面・PiP で共通利用。
+  const memoGrid = (
+    <div className="grid min-h-0 flex-1 grid-cols-[2.4em_1fr_1fr_2.4em_1fr_1fr] grid-rows-4 gap-1.5">
+      <RowLabel>GC1</RowLabel>
+      {hontoUso("gc1")}
+      <RowLabel>GC2</RowLabel>
+      {hontoUso("gc2")}
+
+      <RowLabel>加速</RowLabel>
+      {accelBtn("gc1", "early")}
+      {accelBtn("gc1", "late")}
+      <RowLabel>加速</RowLabel>
+      {accelBtn("gc2", "early")}
+      {accelBtn("gc2", "late")}
+
+      <RowLabel>雷水</RowLabel>
+      {sankaiBtn("early")}
+      {sankaiBtn("late")}
+      <RowLabel>雷水</RowLabel>
+      {linkedBtn("early")}
+      {linkedBtn("late")}
+
+      <RowLabel>🔥</RowLabel>
+      {hontoUso("fire")}
+      <RowLabel>🌊</RowLabel>
+      {hontoUso("tsunami")}
+    </div>
+  );
+
+  return (
+    <div className="flex h-full min-h-0 flex-1 flex-col gap-1.5">
+      {/* ヘッダー：PiP と共有状態 */}
       <div
-        className="flex shrink-0 items-center justify-between border-b-2 border-[#ffcc00] mb-1 pb-[3px]"
+        className="flex shrink-0 items-center gap-2 border-b-2 border-[#ffcc00] pb-[3px]"
         style={{ fontSize: "min(2dvh, 16px)" }}
       >
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            className="inline-flex h-[1.6em] w-[1.6em] cursor-pointer items-center justify-center rounded border border-[#555] bg-[#1c1c1c] text-[0.95em] leading-none text-[#ffcc00] hover:border-[#ffcc00] hover:bg-[#2a2a2a]"
-            onClick={toggleFullscreen}
-            aria-label={isFullscreen ? "フルスクリーン解除" : "フルスクリーン"}
-            title={isFullscreen ? "フルスクリーン解除" : "フルスクリーン"}
-          >
-            {isFullscreen ? "🗗" : "⛶"}
-          </button>
-          <button
-            type="button"
-            className={`inline-flex h-[1.6em] cursor-pointer items-center justify-center gap-[0.2em] rounded border px-[0.4em] text-[0.8em] font-bold leading-none ${
-              pipContainer
-                ? "border-[#ffcc00] bg-[#2a2a2a] text-[#ffcc00]"
-                : "border-[#555] bg-[#1c1c1c] text-[#ffcc00] hover:border-[#ffcc00] hover:bg-[#2a2a2a]"
-            }`}
-            onClick={togglePip}
-            aria-label="最終結果を別窓(最前面)で表示"
-            title="最終結果を別窓(最前面)で表示"
-          >
-            🪟 最終結果
-          </button>
-          <div className="text-[1.2em] font-bold text-[#ffcc00]">🤡 絶妖星乱舞 P4 真偽判定</div>
-          {shareInfo && (
-            <span
-              className={`inline-flex items-center gap-1 rounded border px-[0.4em] py-[0.1em] text-[0.7em] font-bold ${
-                shareInfo.connected
-                  ? "border-[#3fbf6f] bg-[rgba(63,191,111,0.15)] text-[#8fe6ad]"
-                  : "border-[#888] bg-[rgba(255,255,255,0.06)] text-[#aaa]"
-              }`}
-              title={shareInfo.connected ? "同期中" : "接続中…"}
-            >
-              {shareInfo.connected ? "🟢" : "⚪"} 共有 {shareInfo.code}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5">
-          {/* フォントサイズ切替（大中小） */}
-          <div className="inline-flex overflow-hidden rounded border border-[#555]">
-            {FONT_OPTIONS.map((opt) => (
-              <button
-                key={opt.key}
-                type="button"
-                aria-pressed={fontSize === opt.key}
-                className={`cursor-pointer border-none px-2 py-[3px] text-[0.85em] font-bold ${
-                  fontSize === opt.key
-                    ? "bg-[#ffcc00] text-[#0f0f0f]"
-                    : "bg-[#1c1c1c] text-[#aaa] hover:bg-[#2a2a2a]"
-                }`}
-                onClick={() => setFontSize(opt.key)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={showPersonal}
-            className="group inline-flex cursor-pointer items-center gap-1.5 border-none bg-transparent p-0"
-            onClick={() => onChange({ ...state, showPersonal: !showPersonal })}
-          >
-            <span
-              className={`text-[0.85em] font-bold ${showPersonal ? "text-[#ffcc00]" : "text-[#aaa]"}`}
-            >
-              個人ギミック
-            </span>
-            <span
-              className={`relative h-[18px] w-[34px] rounded-[9px] border transition-[background,border-color] duration-150 ${
-                showPersonal ? "border-[#e6b800] bg-[#ffcc00]" : "border-[#555] bg-[#444]"
-              }`}
-            >
-              <span
-                className={`absolute top-px left-px h-[14px] w-[14px] rounded-full transition-[transform,background] duration-150 ${
-                  showPersonal ? "translate-x-4 bg-[#0f0f0f]" : "bg-[#ccc]"
-                }`}
-              />
-            </span>
-          </button>
-          <RowToggle
-            label="結果タイムライン"
-            checked={showTimeline}
-            onChange={() => onChange({ ...state, showTimeline: !showTimeline })}
-          />
-          <RowToggle
-            label="⚡🧊"
-            checked={showCharge}
-            onChange={() => onChange({ ...state, showCharge: !showCharge })}
-          />
-          <button
-            type="button"
-            className="cursor-pointer rounded border-none bg-[#ff3333] px-2 py-[3px] text-[0.85em] font-bold text-white"
-            onClick={resetAll}
-          >
-            ALLリセット
-          </button>
-        </div>
-      </div>
-
-      {/* 表全体：利用可能な高さいっぱいに広げ、各行で等分する */}
-      <div className="flex h-full min-h-0 flex-1 flex-col gap-[2px]">
-        {/* 用途見出し行：本体＝記憶、それ以外＝タイムライン（小さめ＝2dvh基準） */}
-        <div
-          className="grid shrink-0 gap-[3px]"
-          style={{ gridTemplateColumns: gridTemplate, fontSize: "min(2dvh, 15px)" }}
+        <button
+          type="button"
+          onClick={togglePip}
+          className={`inline-flex cursor-pointer items-center gap-[0.2em] rounded border px-[0.5em] py-[0.2em] text-[0.8em] font-bold ${
+            pipOpen
+              ? "border-[#ffcc00] bg-[#2a2a2a] text-[#ffcc00]"
+              : "border-[#555] bg-[#1c1c1c] text-[#ffcc00] hover:border-[#ffcc00]"
+          }`}
         >
-          <div />
-          <div
-            className="flex items-center justify-center gap-[3px] rounded-[5px] border border-[#b07fe6] bg-[linear-gradient(135deg,#8a4fd0_0%,#5e2a99_100%)] px-[2px] py-1 text-center text-[0.95em] font-extrabold leading-[1.1] text-white [box-shadow:inset_0_1px_0_rgba(255,255,255,0.25),0_0_6px_rgba(138,79,208,0.5)] [text-shadow:0_1px_1px_rgba(0,0,0,0.4)]"
-            style={{ gridColumn: "span 1" }}
-          >
-            <span className="text-[1.1em] leading-none [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]">
-              🧠
-            </span>
-            <span>記憶</span>
-          </div>
-          <div
-            className="flex items-center justify-center gap-1 rounded-[5px] border border-[#4fd6d6] bg-[linear-gradient(135deg,#2bb3b3_0%,#146e6e_100%)] px-[2px] py-1 text-center text-[0.95em] font-extrabold leading-[1.1] tracking-[1.5px] text-white [box-shadow:inset_0_1px_0_rgba(255,255,255,0.25),0_0_6px_rgba(43,179,179,0.5)] [text-shadow:0_1px_1px_rgba(0,0,0,0.4)]"
-            style={{ gridColumn: `span ${visibleColumns.length - 1}` }}
-          >
-            <span className="text-[1.1em] leading-none [filter:drop-shadow(0_1px_1px_rgba(0,0,0,0.5))]">
-              ⏱
-            </span>
-            <span className="tracking-[inherit]">タイムライン</span>
-          </div>
-        </div>
-
-        {/* グループ見出し行（小さめ＝2dvh基準） */}
-        <div
-          className="grid shrink-0 gap-[3px]"
-          style={{ gridTemplateColumns: gridTemplate, fontSize: "min(2dvh, 15px)" }}
+          🪟 オーバーレイ表示
+        </button>
+        <button
+          type="button"
+          aria-pressed={pipMemo}
+          onClick={() => {
+            const next = !pipMemo;
+            setPipMemo(next);
+            reopenIfOpen(next, pipFlip);
+          }}
+          className={`inline-flex cursor-pointer items-center gap-[0.2em] rounded border px-[0.5em] py-[0.2em] text-[0.8em] font-bold ${
+            pipMemo
+              ? "border-[#ffcc00] bg-[#ffcc00] text-[#0f0f0f]"
+              : "border-[#555] bg-[#1c1c1c] text-[#ffcc00] hover:border-[#ffcc00]"
+          }`}
         >
-          <div />
-          {visibleColumns.map((col) => (
-            <div
-              key={col.key}
-              className={
-                col.group
-                  ? "flex items-center justify-center rounded-[3px] bg-[#ffcc00] px-px py-[2px] text-center text-[0.95em] font-bold leading-[1.1] text-[#0f0f0f]"
-                  : "bg-transparent"
-              }
-            >
-              {col.group}
-            </div>
-          ))}
-        </div>
-
-        {/* 列名ヘッダー行（小さめ＝2dvh基準） */}
-        <div
-          className="grid shrink-0 gap-[3px]"
-          style={{ gridTemplateColumns: gridTemplate, fontSize: "min(2dvh, 15px)" }}
-        >
-          <div />
-          {visibleColumns.map((col) => (
-            <div
-              key={col.key}
-              className="flex items-center justify-center rounded-[3px] bg-[rgba(255,204,0,0.08)] px-px py-[2px] text-center text-[0.85em] font-bold leading-[1.1] text-[#ffcc00]"
-            >
-              {col.label}
-            </div>
-          ))}
-        </div>
-
-        {/* 最終結果行（結果タイムラインONのとき、GC1の上に集約表示） */}
-        {showTimeline && summaryGrid("inline")}
-
-        {/* 縦軸＝判断していく行（⚡🧊行はトグルOFFで隠す） */}
-        {visibleRows.map((row, rowIndex) => {
-          const activeKey = selections[row.id] ?? null;
-          const zebra = rowIndex % 2 === 0 ? "bg-[#1c1c1c]" : "bg-black";
-
-          // ほのお/つなみ逆連動：参照元の種別の逆だけを表示
-          let displayOptions = row.options;
-          let mirrorWaiting = false;
-          if (row.mirrorOf) {
-            const srcKey = selections[row.mirrorOf] ?? null;
-            const srcKind = srcKey ? elementKind(srcKey) : null;
-            if (srcKind) {
-              const wantKind = srcKind === "fire" ? "tsunami" : "fire";
-              displayOptions = row.options.filter((o) => elementKind(o.key) === wantKind);
-            } else {
-              // 1回目が未選択なら2回目は待機表示
-              mirrorWaiting = true;
+          🧠 記憶も
+        </button>
+        <button
+          type="button"
+          aria-pressed={pipFlip}
+          onClick={() => {
+            const next = !pipFlip;
+            setPipFlip(next);
+            // 開いていれば結果/記憶のコンテナを即その場で上下入れ替え
+            if (pipContainer) {
+              pipContainer.style.flexDirection = next ? "column-reverse" : "column";
             }
-          }
-
-          // 表示中のオプションに含まれる選択だけ有効（連動で種別が変わったら無効化）
-          const activeOption = displayOptions.find((o) => o.key === activeKey) ?? null;
-
-          return (
-            <div
-              key={row.id}
-              className={`grid min-h-0 flex-1 gap-[3px] rounded ${zebra}`}
-              style={{ gridTemplateColumns: gridTemplate }}
-            >
-              <div
-                className="flex items-center justify-center border-l-2 border-[#ffcc00] px-px text-center font-bold leading-[1.1] text-white"
-                style={{ fontSize: "min(1.7dvh, 13px)" }}
-              >
-                {row.name}
-              </div>
-
-              {/* 本体列：操作ボタン */}
-              <div className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]">
-                {mirrorWaiting ? (
-                  <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.85rem] text-[#777]">
-                    ↑1回目を選択
-                  </div>
-                ) : (
-                  <div
-                    className="grid min-h-0 flex-1 auto-rows-fr gap-[3px]"
-                    style={{
-                      gridTemplateColumns: `repeat(${displayOptions.length === 4 ? 2 : displayOptions.length}, 1fr)`,
-                    }}
-                  >
-                    {displayOptions.map((opt) => {
-                      const isActive = activeKey === opt.key;
-                      return (
-                        <button
-                          key={opt.key}
-                          type="button"
-                          className={`h-full w-full min-h-0 min-w-0 cursor-pointer rounded border p-0 text-[0.85rem] font-bold ${
-                            isActive ? toneClass[opt.tone] : "border-[#444] bg-[#222] text-[#ccc]"
-                          }`}
-                          onClick={() => setSelect(row.id, opt.key)}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {/* 右側：表示専用。本体の選択結果を表示 */}
-              {resultCols.map((col) => {
-                const result = activeOption?.results[col.key] ?? null;
-                const usesCol = row.options.some((o) => o.results[col.key]);
-                if (!usesCol) {
-                  return <div key={col.key} className="min-w-0 rounded" />;
-                }
-                // 個人ギミック（緑）は自分用マーカーとして点灯トグルできる
-                const isPersonalGreen = result?.tone === "green";
-                const markId = `${row.id}:${col.key}`;
-                const lit = marks[markId];
-                return (
-                  <div
-                    key={col.key}
-                    className="flex min-w-0 flex-col gap-[3px] rounded border border-[#333] bg-[rgba(255,255,255,0.03)] p-[3px]"
-                  >
-                    {result ? (
-                      result.stack ? (
-                        // 縦積み：上=雷水(常表示・青赤・クリック連動)、下=加速(個人ギミック・緑)
-                        // stack順は [加速(i=0), 雷水(i=1)] のままで、表示だけ reverse で雷水を上に。
-                        <div className="flex min-h-0 flex-1 flex-col-reverse items-stretch justify-center gap-[3px]">
-                          {result.stack.map((s, i) => {
-                            const isRaisui = i === 1; // i=1 が 雷/水さんかい
-                            // 加速(i=0)は個人ギミックOFFで隠す。雷水は常に表示。
-                            if (!isRaisui && !showPersonal) return null;
-                            const subId = `${markId}:${i}`;
-                            const subLit = marks[subId];
-                            const subDimmed = dimmedMarks[subId] && !subLit;
-                            if (isRaisui) {
-                              // 雷水：青(雷)/赤(水)。点灯で塗り、未点灯は枠線のみ、薄表示はグレー。
-                              return (
-                                <button
-                                  key={subId}
-                                  type="button"
-                                  className={`${linkedResultBase} w-full cursor-pointer border-2 font-[inherit] ${
-                                    subDimmed
-                                      ? "border-[#555] bg-[rgba(255,255,255,0.03)] text-[#777] opacity-60"
-                                      : subLit
-                                        ? toneClass[s.tone]
-                                        : outlineClass[s.tone]
-                                  }`}
-                                  onClick={() => toggleMark(subId)}
-                                >
-                                  {s.action}
-                                </button>
-                              );
-                            }
-                            // 加速：緑の個人ギミックマーカー
-                            return (
-                              <button
-                                key={subId}
-                                type="button"
-                                className={`${linkedResultBase} w-full cursor-pointer border-2 border-[#3fbf6f] font-[inherit] ${
-                                  subDimmed
-                                    ? "border-[#555] bg-[rgba(255,255,255,0.03)] text-[#777] opacity-60"
-                                    : subLit
-                                      ? "bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
-                                      : "bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
-                                }`}
-                                onClick={() => toggleMark(subId)}
-                              >
-                                {s.action}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      ) : result.alt ? (
-                        // ほんと/ウソで対照になる2候補を枠線だけで並べて表示
-                        <div className="flex min-h-0 flex-1 flex-col items-stretch justify-center gap-px">
-                          <div
-                            className={`${linkedResultBase} flex-[1_1_auto] ${outlineClass[result.tone]}`}
-                          >
-                            {result.action}
-                          </div>
-                          <div className="shrink-0 text-center text-[0.62rem] font-bold leading-none text-[#888]">
-                            or
-                          </div>
-                          <div
-                            className={`${linkedResultBase} flex-[1_1_auto] ${outlineClass[result.alt.tone]}`}
-                          >
-                            {result.alt.action}
-                          </div>
-                        </div>
-                      ) : isPersonalGreen ? (
-                        <button
-                          type="button"
-                          className={`${linkedResultBase} w-full cursor-pointer border-2 border-[#3fbf6f] font-[inherit] ${
-                            lit
-                              ? "bg-[#3fbf6f] text-white [box-shadow:0_0_8px_2px_rgba(63,191,111,0.8)]"
-                              : "bg-[rgba(63,191,111,0.12)] text-[#8fe6ad]"
-                          }`}
-                          onClick={() => toggleMark(markId)}
-                        >
-                          {result.action}
-                        </button>
-                      ) : (
-                        <div
-                          className={`${linkedResultBase} ${
-                            result.outline ? outlineClass[result.tone] : toneClass[result.tone]
-                          }`}
-                        >
-                          {result.action}
-                        </div>
-                      )
-                    ) : (
-                      <div className="flex min-h-0 flex-1 items-center justify-center text-center text-[0.7rem] text-[#3a3a3a]">
-                        ·
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
+          }}
+          className={`inline-flex cursor-pointer items-center gap-[0.2em] rounded border px-[0.5em] py-[0.2em] text-[0.8em] font-bold ${
+            pipFlip
+              ? "border-[#ffcc00] bg-[#ffcc00] text-[#0f0f0f]"
+              : "border-[#555] bg-[#1c1c1c] text-[#ffcc00] hover:border-[#ffcc00]"
+          }`}
+        >
+          🔃 上下反転
+        </button>
+        {shareInfo && (
+          <span
+            className={`inline-flex items-center gap-1 rounded border px-[0.4em] py-[0.1em] text-[0.7em] font-bold ${
+              shareInfo.connected
+                ? "border-[#3fbf6f] bg-[rgba(63,191,111,0.15)] text-[#8fe6ad]"
+                : "border-[#888] bg-[rgba(255,255,255,0.06)] text-[#aaa]"
+            }`}
+          >
+            {shareInfo.connected ? "🟢" : "⚪"} 共有 {shareInfo.code}
+          </span>
+        )}
       </div>
 
-      {/* Document PiP の小窓へ最終結果を描画（親stateと自動同期） */}
-      {pipContainer && createPortal(summaryGrid("pip"), pipContainer)}
-    </>
+      {/* 結果（上） */}
+      <div
+        className="flex shrink-0 flex-col rounded-lg border-2 border-[#ffcc00] bg-[rgba(255,204,0,0.06)] p-1.5"
+        style={{ height: resultH != null ? `${resultH}px` : "40dvh" }}
+      >
+        <SummaryView state={state} />
+      </div>
+
+      {/* 結果と記憶の間：ドラッグで上下サイズ変更 */}
+      <div
+        className="flex shrink-0 cursor-row-resize items-center justify-center py-[2px]"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          onDividerDown(e.clientY);
+        }}
+        onTouchStart={(e) => onDividerDown(e.touches[0].clientY)}
+        title="ドラッグで結果と記憶の高さを調整"
+      >
+        <span className="h-[4px] w-12 rounded-full bg-[#555] hover:bg-[#ffcc00]" />
+      </div>
+
+      {/* 記憶（下）：4行×6列。PiPに記憶を出している間は本体側は隠す */}
+      {!(pipOpen && pipMemo) && memoGrid}
+
+      {/* PiP 小窓：結果（＋記憶も表示ON時は記憶）を描画。state と自動同期・操作可 */}
+      {pipContainer &&
+        createPortal(
+          <>
+            <div
+              className="flex shrink-0 flex-col rounded-lg border-2 border-[#ffcc00] bg-[rgba(255,204,0,0.06)] p-1.5"
+              style={{ height: pipMemo ? "40%" : "100%" }}
+            >
+              <SummaryView state={state} />
+            </div>
+            {pipMemo && memoGrid}
+          </>,
+          pipContainer,
+        )}
+    </div>
   );
 }

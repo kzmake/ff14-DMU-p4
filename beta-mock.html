@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>P4 真偽判定 beta（モック）</title>
+<style>
+  :root {
+    --blue: #4dadff; --blue-b: #3399ff;
+    --red: #ff4d4d;  --red-b: #ff3333;
+    --green: #3fbf6f; --green-b: #2fa85c;
+    --gold: #ffcc00;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #0f0f0f; color: #eee;
+    font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", sans-serif;
+    display: flex; flex-direction: column;
+    height: 100dvh; overflow: hidden; padding: 6px; gap: 6px;
+  }
+
+  /* 左上のPiPボタン */
+  .pip-btn {
+    align-self: flex-start;
+    display: inline-flex; align-items: center; gap: 4px;
+    border: 1px solid #555; background: #1c1c1c; color: var(--gold);
+    border-radius: 8px; font-weight: 700; font-size: 13px;
+    padding: 6px 10px; cursor: pointer;
+  }
+  .pip-btn:hover { border-color: var(--gold); background: #2a2a2a; }
+  .pip-btn.on { border-color: var(--gold); background: #2a2a2a; }
+  .pip-btn[aria-pressed="true"] { border-color: var(--gold); background: var(--gold); color: #0f0f0f; }
+  .pip-bar { display: flex; gap: 8px; flex: 0 0 auto; }
+
+  /* ===== 結果（上）：高さをドラッグでリサイズ可能 ===== */
+  .result-wrap {
+    flex: 0 0 auto;
+    border: 2px solid var(--gold);
+    border-radius: 8px;
+    background: rgba(255,204,0,0.06);
+    padding: 6px;
+    display: flex; flex-direction: column; gap: 6px;
+    overflow: auto;
+    height: 40dvh; min-height: 60px;
+  }
+  /* 結果と記憶の間：ドラッグで上下サイズ変更 */
+  .divider {
+    flex: 0 0 auto; height: 14px; cursor: row-resize;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .divider::before {
+    content: ''; width: 48px; height: 4px; border-radius: 2px;
+    background: #555;
+  }
+  .divider:hover::before { background: var(--gold); }
+  .result-title {
+    color: var(--gold); font-weight: 800; font-size: 14px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  /* 結果は左から 1〜5 の横並び5列（spec.md の「結果」順）。高さいっぱいに広げる */
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    flex: 1 1 0; min-height: 0;
+  }
+  .result-col {
+    display: flex; flex-direction: column; gap: 4px;
+    border: 1px solid #333; border-radius: 6px;
+    background: rgba(255,255,255,0.03); padding: 4px;
+    min-height: 0;
+  }
+  .result-collabel {
+    text-align: center; font-weight: 800; font-size: 11px;
+    color: var(--gold); line-height: 1.1; min-height: 24px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .result-cells { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .cell {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    text-align: center; font-weight: 700; font-size: 14px;
+    border-radius: 6px; padding: 6px 2px; min-height: 36px;
+    border: 2px solid #333; background: rgba(255,255,255,0.03); color: #555;
+    line-height: 1.2; white-space: pre-line;
+  }
+  .cell.blue  { background: var(--blue);  border-color: var(--blue-b);  color: #fff; }
+  .cell.red   { background: var(--red);   border-color: var(--red-b);   color: #fff; }
+  .cell.green { background: var(--green); border-color: var(--green-b); color: #fff; }
+  .cell.outline-blue  { background: transparent; border-color: var(--blue);  color: #8fcaff; }
+  .cell.outline-red   { background: transparent; border-color: var(--red);   color: #ff9999; }
+  .cell.outline-green { background: transparent; border-color: var(--green); color: #8fe6ad; }
+  /* 未選択時のうっすら案内（その列に来るもの） */
+  .cell.empty {
+    color: #555; font-weight: 600; font-size: 11px;
+    border-style: dashed; border-color: #2c2c2c; background: transparent;
+  }
+
+  /* ===== 記憶：残り高さに行を等間隔でフィット ===== */
+  .memo-wrap {
+    flex: 1 1 auto; min-height: 0;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  /* 4行×6列の表：左[ラベル,btn,btn] 右[ラベル,btn,btn]。残り高さを4行で等分 */
+  .memo-table {
+    flex: 1 1 0; min-height: 0;
+    display: grid;
+    grid-template-columns: 2.4em 1fr 1fr 2.4em 1fr 1fr;
+    grid-template-rows: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .row-label {
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; color: var(--gold);
+    line-height: 1.1; text-align: center;
+  }
+  button.opt {
+    border: 2px solid #444; background: #222; color: #ccc;
+    border-radius: 10px; font-weight: 800; font-size: 16px;
+    padding: 0 8px; cursor: pointer; height: 100%; min-height: 44px;
+    transition: transform .05s;
+    line-height: 1.1;
+    touch-action: manipulation;
+    /* ラベルとサブ表示を横並び（縦に伸びない） */
+    display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
+    white-space: nowrap; overflow: hidden;
+  }
+  button.opt.big { font-size: 18px; }
+  button.opt:active { transform: scale(0.96); }
+  button.opt.on-blue  { background: var(--blue);  border-color: var(--blue-b);  color:#fff; }
+  button.opt.on-red   { background: var(--red);   border-color: var(--red-b);   color:#fff; }
+  button.opt.on-green { background: transparent;  border-color: var(--green);   color: var(--green); }
+  /* 選択前の種類ヒント（雷=青枠 / 水=赤枠、薄く） */
+  .opt.hint-blue { border-color: var(--blue); color: #8fcaff; }
+  .opt.hint-red  { border-color: var(--red);  color: #ff9999; }
+  /* 連動（押せない）：disabled。点線枠で「自動で決まる」感を出す */
+  .opt:disabled { cursor: default; border-style: dashed; }
+  .opt:disabled.dim { opacity: .4; }
+  /* 左の見出し（早/遅 など）は小さく、状態テキストを主役に */
+  button.opt small {
+    font-weight: 700; font-size: 11px; opacity: .7;
+    padding: 1px 5px; border-radius: 5px; background: rgba(255,255,255,0.08);
+  }
+  /* タグ付きボタンは「タグ｜テキスト」を左寄せで並べる */
+  button.opt:has(.tag) { justify-content: flex-start; gap: 8px; }
+  /* 早/遅 タグ：先頭に黄色塗りつぶしで大きく */
+  button.opt .tag {
+    flex: 0 0 auto;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 1.7em; height: 1.7em;
+    font-size: 20px; font-weight: 900; line-height: 1;
+    color: #0f0f0f; background: var(--gold); border-radius: 7px;
+  }
+</style>
+</head>
+<body>
+
+  <!-- 左上：結果をPicture-in-Picture（最前面の小窓）で開く -->
+  <div class="pip-bar">
+    <button id="pip-btn" class="pip-btn" title="結果を別窓（最前面）で表示">🪟 オーバーレイ表示</button>
+    <button id="pip-memo-toggle" class="pip-btn" aria-pressed="false" title="PiPに記憶（操作ボタン）も表示">🧠 記憶も表示</button>
+    <button id="pip-flip-toggle" class="pip-btn" aria-pressed="false" title="PiPの結果と記憶の上下を入れ替え">🔃 上下反転</button>
+  </div>
+  <!-- PiPへ移動する要素を戻す位置の目印 -->
+  <div id="app-anchor" hidden></div>
+
+  <!-- ===== 結果（上）：左から 1〜5 ===== -->
+  <div class="result-wrap">
+    <div class="result-grid">
+      <!-- 順番で分かるのでヘッダー行は無し -->
+      <!-- ① 早：雷水・加速度 -->
+      <div class="result-col"><div class="result-cells" id="res-early"></div></div>
+      <!-- ② 早：視線 -->
+      <div class="result-col"><div class="result-cells" id="res-look"></div></div>
+      <!-- ③ ほのお -->
+      <div class="result-col"><div class="result-cells" id="res-fire"></div></div>
+      <!-- ④ 遅：雷水・加速度 -->
+      <div class="result-col"><div class="result-cells" id="res-late"></div></div>
+      <!-- ⑤ つなみ -->
+      <div class="result-col"><div class="result-cells" id="res-tsunami"></div></div>
+    </div>
+  </div>
+
+  <!-- 結果と記憶の間：ドラッグでサイズ変更 -->
+  <div class="divider" id="divider"></div>
+
+  <!-- ===== 記憶（4行×6列：左=GC1系 / 右=GC2系。先頭がラベル列） ===== -->
+  <div class="memo-wrap">
+    <div class="memo-table">
+      <!-- 1行目：GC1 / GC2 -->
+      <span class="row-label">GC1</span>
+      <button class="opt big" data-sel="gc1" data-val="honto" data-tone="blue">ホント</button>
+      <button class="opt big" data-sel="gc1" data-val="uso"   data-tone="red">ウソ</button>
+      <span class="row-label">GC2</span>
+      <button class="opt big" data-sel="gc2" data-val="honto" data-tone="blue">ホント</button>
+      <button class="opt big" data-sel="gc2" data-val="uso"   data-tone="red">ウソ</button>
+
+      <!-- 2行目：加速（GC1 / GC2） -->
+      <span class="row-label">加速</span>
+      <button class="opt" data-sel="accel" data-key="gc1:early"><b class="tag">早</b><span class="accel-sub">動く</span></button>
+      <button class="opt" data-sel="accel" data-key="gc1:late"><b class="tag">遅</b><span class="accel-sub">動く</span></button>
+      <span class="row-label">加速</span>
+      <button class="opt" data-sel="accel" data-key="gc2:early"><b class="tag">早</b><span class="accel-sub">動く</span></button>
+      <button class="opt" data-sel="accel" data-key="gc2:late"><b class="tag">遅</b><span class="accel-sub">動く</span></button>
+
+      <!-- 3行目：雷水（GC1=選択 / GC2=連動・押せない） -->
+      <span class="row-label">雷水</span>
+      <button class="opt" data-sel="sankai" data-val="early"><b class="tag">早</b><span id="sankai-e-sub">雷水</span></button>
+      <button class="opt" data-sel="sankai" data-val="late"><b class="tag">遅</b><span id="sankai-l-sub">雷水</span></button>
+      <span class="row-label">雷水</span>
+      <button class="opt" id="sankai-linked-early" disabled><b class="tag">早</b><span class="linked-sub">雷水</span></button>
+      <button class="opt" id="sankai-linked-late" disabled><b class="tag">遅</b><span class="linked-sub">雷水</span></button>
+
+      <!-- 4行目：ほのお / つなみ -->
+      <span class="row-label">🔥</span>
+      <button class="opt big" data-sel="fire" data-val="honto" data-tone="blue">ホント</button>
+      <button class="opt big" data-sel="fire" data-val="uso"   data-tone="red">ウソ</button>
+      <span class="row-label">🌊</span>
+      <button class="opt big" data-sel="tsunami" data-val="honto" data-tone="blue">ホント</button>
+      <button class="opt big" data-sel="tsunami" data-val="uso"   data-tone="red">ウソ</button>
+    </div>
+  </div>
+
+<script>
+  // ===== 状態 =====
+  const state = {
+    gc1: null,        // honto | uso
+    gc2: null,        // honto | uso
+    fire: null,       // honto | uso
+    tsunami: null,    // honto | uso
+    sankai: null,     // early | late（必須1つ）
+    // 加速度（動く/動かない）は GC1/GC2 × 早/遅 の4ボタン中「合計1つだけ」点灯。
+    // どのボタンか1つを文字列キーで保持： "gc1:early" など。null=未選択。
+    accel: null,
+  };
+
+  // spec.md ロジック
+  // GC1/GC2 それぞれ honto=雷さんかい/動く（青）, uso=水さんかい/動かない（赤）
+  const raisuiTone  = (gc) => state[gc] === 'uso' ? 'red' : 'blue';
+  const raisuiLabel = (gc) => state[gc] === 'uso' ? '水さんかい' : '雷さんかい';
+  const accelLabel  = (gc) => state[gc] === 'uso' ? '動かない' : '動く';
+
+  // ホント/ウソ系（gc1/gc2/fire/tsunami）と sankai は val 方式
+  function bindSimple(sel, key) {
+    document.querySelectorAll(`[data-sel="${sel}"]`).forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.dataset.val;
+        state[key] = (state[key] === val) ? null : val; // 再押下で解除
+        render();
+      });
+    });
+  }
+  bindSimple('gc1','gc1'); bindSimple('gc2','gc2');
+  bindSimple('fire','fire'); bindSimple('tsunami','tsunami');
+  bindSimple('sankai','sankai');
+
+  // 加速：4ボタン中1つだけ点灯（合計最大1個）。再押下で解除。
+  document.querySelectorAll('[data-sel="accel"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const k = btn.dataset.key; // "gc1:early" など
+      state.accel = (state.accel === k) ? null : k;
+      render();
+    });
+  });
+
+  // 描画/状態反映の検索ルート（通常はdocument。PiPへ移動中はPiPのdocument）。
+  let root = document;
+
+  function setBtnState() {
+    root.querySelectorAll('button.opt').forEach(btn => {
+      const sel = btn.dataset.sel;
+      btn.classList.remove('on-blue','on-red','on-green','hint-blue','hint-red');
+      let on = false, tone = btn.dataset.tone;
+      if (sel === 'accel') {
+        on = state.accel === btn.dataset.key;
+        tone = 'green';
+      } else {
+        const key = sel; // gc1/gc2/fire/tsunami/sankai は同名
+        on = state[key] === btn.dataset.val;
+        // 雷水位置ボタンは GC1 のみと連動（GC1のホント=雷/ウソ=水）。
+        // GC2 は結果側だけに反映するので、ここでは見ない。
+        if (sel === 'sankai') {
+          tone = state.gc1 ? raisuiTone('gc1') : 'blue';
+          if (!on && state.gc1) btn.classList.add('hint-' + tone);
+        }
+      }
+      if (on) btn.classList.add('on-' + tone);
+    });
+
+    // 加速ボタンのサブラベル（動く/動かない）を各GCに合わせて更新
+    root.querySelectorAll('[data-sel="accel"]').forEach(btn => {
+      const gc = btn.dataset.key.split(':')[0]; // gc1/gc2
+      const sub = btn.querySelector('.accel-sub');
+      if (sub) sub.textContent = accelLabel(gc);
+    });
+
+    // 雷水ボタンのメイン表示：GC1 のみと連動。GC1選択で「雷/水さんかい」、未選択なら「雷水さんかい」。
+    // 早/遅どちらも GC1 の雷水（早側に置くか遅側に置くかの選択）なので同じラベル。
+    const eSub = root.getElementById('sankai-e-sub');
+    const lSub = root.getElementById('sankai-l-sub');
+    if (eSub && lSub) {
+      const label = state.gc1 ? raisuiLabel('gc1') : '雷水さんかい';
+      eSub.textContent = label;
+      lSub.textContent = label;
+    }
+
+    // 連動表示（押せない・GC2の雷水）：GC1の早/遅選択で反対側に来る枠だけ点灯。
+    // sankai='early'（GC1を早に置く）→ GC2は遅側 / sankai='late' → GC2は早側。
+    const linkedE = root.getElementById('sankai-linked-early');
+    const linkedL = root.getElementById('sankai-linked-late');
+    const activeSide = state.sankai === 'early' ? 'late'
+      : state.sankai === 'late' ? 'early' : null;
+    [['early', linkedE], ['late', linkedL]].forEach(([side, el]) => {
+      if (!el) return;
+      el.classList.remove('hint-blue','hint-red','dim');
+      const sub = el.querySelector('.linked-sub');
+      const isActive = side === activeSide && state.gc2;
+      if (isActive) {
+        if (sub) sub.textContent = raisuiLabel('gc2');
+        el.classList.add('hint-' + raisuiTone('gc2'));
+      } else {
+        if (sub) sub.textContent = '雷水';
+        el.classList.add('dim');
+      }
+    });
+  }
+
+  // ===== 結果計算 =====
+  // 1-a: sankai='early' → 早=GC1, 遅=GC2 ／ 'late' → 早=GC2, 遅=GC1
+  function sankaiGcFor(side) {
+    if (!state.sankai) return null;
+    if (state.sankai === 'early') return side === 'early' ? 'gc1' : 'gc2';
+    return side === 'early' ? 'gc2' : 'gc1'; // sankai==='late'
+  }
+
+  // 早側/遅側セル（雷水[上]＋動く/動かない[下]）
+  function sideCells(side) {
+    const cells = [];
+    const gc = sankaiGcFor(side); // この side に来る雷水のGC
+    if (gc && state[gc]) cells.push({ text: raisuiLabel(gc), tone: raisuiTone(gc) });
+    if (state.accel) {
+      const [aGc, aSide] = state.accel.split(':');
+      if (aSide === side && state[aGc]) cells.push({ text: accelLabel(aGc), tone: 'outline-green' });
+    }
+    return cells;
+  }
+
+  // 状態 → 結果表（5列ぶんのセル配列を持つ1つのデータ）を組み立てる。
+  // 描画はこの table を読むだけ。ここが唯一の「結果の真実」。
+  function computeResultTable() {
+    return [
+      // placeholder = 未選択時にうっすら出す案内
+      { id: 'res-early',   placeholder: '早\n雷水・加速', cells: sideCells('early') },     // ① 早：雷水・加速
+      { id: 'res-look',    placeholder: '早\n視線', cells: !state.gc1 ? []                 // ② 早：視線
+          : [ state.gc1 === 'honto'
+                ? { text: 'みない', tone: 'blue' }
+                : { text: 'みる',   tone: 'outline-red' } ] },
+      { id: 'res-fire',    placeholder: '🔥\nほのお', cells: state.fire === 'honto' ? [{ text: '🔥離れる', tone: 'blue' }]   // ③ ほのお
+          : state.fire === 'uso' ? [{ text: '🔥そのまま', tone: 'outline-red' }] : [] },
+      { id: 'res-late',    placeholder: '遅\n雷水・加速', cells: sideCells('late') },       // ④ 遅：雷水・加速
+      { id: 'res-tsunami', placeholder: '🌊\nつなみ', cells: state.tsunami === 'honto' ? [{ text: '🌊そのまま', tone: 'outline-blue' }] // ⑤ つなみ
+          : state.tsunami === 'uso' ? [{ text: '🌊離れる', tone: 'red' }] : [] },
+    ];
+  }
+
+  // 1列ぶんのセルを描画（本体・PiP共通）
+  function paintColumn(container, col) {
+    container.innerHTML = '';
+    if (col.cells.length === 0) {
+      const d = document.createElement('div');
+      d.className = 'cell empty'; d.textContent = col.placeholder || '·';
+      container.appendChild(d);
+      return;
+    }
+    for (const c of col.cells) {
+      const d = document.createElement('div');
+      d.className = 'cell ' + c.tone;
+      d.textContent = c.text;
+      container.appendChild(d);
+    }
+  }
+
+  function render() {
+    setBtnState();
+    // 結果列を描画（root が PiP のときは PiP 内の同じ要素を更新）
+    for (const col of computeResultTable()) {
+      const el = root.getElementById(col.id);
+      if (el) paintColumn(el, col);
+    }
+  }
+
+  // ===== Picture-in-Picture（実DOMを小窓へ移動。操作も可能） =====
+  const pipBtn = document.getElementById('pip-btn');
+  const pipMemoToggle = document.getElementById('pip-memo-toggle');
+  const pipFlipToggle = document.getElementById('pip-flip-toggle');
+  const anchor = document.getElementById('app-anchor'); // 戻す位置の目印
+  let includeMemo = false; // PiPに記憶も含めるか
+  let pipFlip = false;      // PiPの上下を反転するか
+
+  pipMemoToggle.addEventListener('click', () => {
+    includeMemo = !includeMemo;
+    pipMemoToggle.setAttribute('aria-pressed', String(includeMemo));
+    // 既に開いていれば開き直して反映
+    if (window.documentPictureInPicture && window.documentPictureInPicture.window) {
+      window.documentPictureInPicture.window.close();
+      setTimeout(togglePip, 50);
+    }
+  });
+
+  pipFlipToggle.addEventListener('click', () => {
+    pipFlip = !pipFlip;
+    pipFlipToggle.setAttribute('aria-pressed', String(pipFlip));
+    // 開いていればその場で上下を入れ替え
+    const w = window.documentPictureInPicture && window.documentPictureInPicture.window;
+    if (w) w.document.body.style.flexDirection = pipFlip ? 'column-reverse' : 'column';
+  });
+
+  // PiPへ移動する要素（記憶ONなら記憶＋仕切りも）
+  function movableNodes() {
+    const nodes = [document.querySelector('.result-wrap')];
+    if (includeMemo) {
+      nodes.push(document.getElementById('divider'));
+      nodes.push(document.querySelector('.memo-wrap'));
+    }
+    return nodes.filter(Boolean);
+  }
+
+  async function togglePip() {
+    const dpip = window.documentPictureInPicture;
+    if (!dpip) {
+      alert('この機能はDocument Picture-in-Picture対応ブラウザ（Chrome系）でのみ使えます。');
+      return;
+    }
+    if (dpip.window) { dpip.window.close(); return; }
+
+    const h = includeMemo ? 360 : 150;
+    const pip = await dpip.requestWindow({ width: 480, height: h });
+
+    // 親のスタイルを小窓へコピー
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        const css = Array.from(sheet.cssRules).map((r) => r.cssText).join('');
+        const style = pip.document.createElement('style');
+        style.textContent = css;
+        pip.document.head.appendChild(style);
+      } catch {
+        if (sheet.href) {
+          const link = pip.document.createElement('link');
+          link.rel = 'stylesheet'; link.href = sheet.href;
+          pip.document.head.appendChild(link);
+        }
+      }
+    }
+    pip.document.body.style.cssText =
+      'margin:0;background:#0f0f0f;padding:6px;height:100dvh;display:flex;flex-direction:column;gap:6px;overflow:hidden;';
+    if (pipFlip) pip.document.body.style.flexDirection = 'column-reverse';
+
+    // 実DOMを小窓へ移動（イベントリスナーは維持される）。root を切り替え。
+    const moved = movableNodes();
+    moved.forEach((n) => pip.document.body.appendChild(n));
+    root = pip.document;
+    pipBtn.classList.add('on');
+    render(); // 移動先で再描画
+
+    pip.addEventListener('pagehide', () => {
+      // 元の位置（anchor の前）へ戻す
+      moved.forEach((n) => anchor.parentNode.insertBefore(n, anchor));
+      root = document;
+      pipBtn.classList.remove('on');
+      render();
+    });
+  }
+  pipBtn.addEventListener('click', togglePip);
+
+  // ===== 結果/記憶の境界をドラッグでリサイズ（本体・PiP両対応） =====
+  (() => {
+    const divider = document.getElementById('divider');
+    const resultWrap = document.querySelector('.result-wrap');
+
+    // ドラッグ中、divider がいる window（本体 or PiP）にハンドラを動的に付ける。
+    const start = (startEvt) => {
+      startEvt.preventDefault && startEvt.preventDefault();
+      // divider が今いるドキュメント／ウィンドウ（PiPへ移動していればそちら）
+      const doc = divider.ownerDocument;
+      const win = doc.defaultView;
+      // 上下反転中（column-reverse）かどうかで基準が変わる
+      const reversed = getComputedStyle(doc.body).flexDirection === 'column-reverse';
+
+      const onMove = (clientY) => {
+        const padTop = 6;
+        let h;
+        if (reversed) {
+          // 結果が下：下端からの距離が結果の高さ
+          h = (win.innerHeight - padTop) - clientY;
+        } else {
+          h = clientY - padTop;
+        }
+        h = Math.max(60, Math.min(win.innerHeight - 120, h));
+        resultWrap.style.height = h + 'px';
+      };
+      const mm = (e) => onMove(e.clientY);
+      const tm = (e) => onMove(e.touches[0].clientY);
+      const end = () => {
+        win.removeEventListener('mousemove', mm);
+        win.removeEventListener('mouseup', end);
+        win.removeEventListener('touchmove', tm);
+        win.removeEventListener('touchend', end);
+      };
+      win.addEventListener('mousemove', mm);
+      win.addEventListener('mouseup', end);
+      win.addEventListener('touchmove', tm, { passive: true });
+      win.addEventListener('touchend', end);
+    };
+
+    divider.addEventListener('mousedown', start);
+    divider.addEventListener('touchstart', start, { passive: false });
+  })();
+
+  render();
+</script>
+</body>
+</html>

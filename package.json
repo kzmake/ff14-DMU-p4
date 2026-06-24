@@ -9,7 +9,8 @@
     "start": "next start -p 8080",
     "lint": "biome lint .",
     "format": "biome format --write .",
-    "check": "biome check --write ."
+    "check": "biome check --write .",
+    "check:spec": "node --experimental-strip-types tests/p4rules.spec.ts"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0",

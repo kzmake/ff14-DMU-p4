@@ -2,16 +2,14 @@
 
 import { useCallback, useRef, useState } from "react";
 import {
+  accelLabel,
   type BoardState,
-  elementKind,
+  type GcKey,
   INITIAL_BOARD_STATE,
-  type Option,
-  type Row,
-  ROWS,
-  toneClass,
-  type Tone,
-} from "@/components/Board";
-import { applyMarkToggle } from "@/lib/marks";
+  raisuiLabel,
+  raisuiTone,
+  type Side,
+} from "@/lib/p4rules";
 import { useShareConnection } from "@/lib/useShareConnection";
 
 function makeClientId(): string {
@@ -19,21 +17,10 @@ function makeClientId(): string {
   return `c-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
 }
 
-// 加速列キー（早・遅）
-const ACCEL_COLS = [
-  { col: "e-accel", label: "早" },
-  { col: "l-accel", label: "遅" },
-] as const;
-
-const outlineTone: Record<Tone, string> = {
-  blue: "border-[#4dadff] text-[#8fcaff]",
-  red: "border-[#ff4d4d] text-[#ff9999]",
-  thunder: "border-[#a64dff] text-[#c79bff]",
-  ice: "border-[#bfe6f5] text-[#cdeeff]",
-  both: "border-[#ff9933] text-[#ffc080]",
-  safe: "border-[#4ddd7e] text-[#8fe8b0]",
-  green: "border-[#3fbf6f] text-[#8fe6ad]",
-};
+const onBlue = "bg-[#4dadff] text-white border-[#3399ff]";
+const onRed = "bg-[#ff4d4d] text-white border-[#ff3333]";
+const onGreen = "bg-transparent text-[#3fbf6f] border-[#3fbf6f]";
+const offBtn = "bg-[#222] text-[#ccc] border-[#444]";
 
 // スマホ向け操作リモコン。ボタンを押すと状態がサーバー同期される。
 export default function SharedController({ code }: { code: string }) {
@@ -86,130 +73,123 @@ export default function SharedController({ code }: { code: string }) {
     [postState],
   );
 
-  const setSelect = (rowId: string, optionKey: string) =>
-    commit({
-      ...state,
-      selections: {
-        ...state.selections,
-        [rowId]: state.selections[rowId] === optionKey ? null : optionKey,
-      },
-    });
+  const setChoice = (key: "gc1" | "gc2" | "fire" | "tsunami", v: "honto" | "uso") =>
+    commit({ ...state, [key]: state[key] === v ? null : v });
+  const setSankai = (v: Side) => commit({ ...state, sankai: state.sankai === v ? null : v });
+  const setAccel = (key: string) => commit({ ...state, accel: state.accel === key ? null : key });
 
-  const toggleMark = (id: string) => {
-    const { marks, dimmedMarks } = applyMarkToggle(state, id);
-    commit({ ...state, marks, dimmedMarks });
+  const Btn = ({
+    label,
+    sub,
+    onClass,
+    active,
+    onClick,
+  }: {
+    label: string;
+    sub?: string;
+    onClass: string;
+    active: boolean;
+    onClick: () => void;
+  }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-h-[72px] cursor-pointer items-center justify-center gap-2 rounded-lg border-2 text-2xl font-bold ${
+        active ? onClass : offBtn
+      }`}
+    >
+      {sub && (
+        <b className="inline-flex h-[1.6em] min-w-[1.6em] items-center justify-center rounded-md bg-[#ffcc00] text-xl font-black text-[#0f0f0f]">
+          {sub}
+        </b>
+      )}
+      <span>{label}</span>
+    </button>
+  );
+
+  const accelBtn = (gc: GcKey, side: Side) => {
+    const key = `${gc}:${side}`;
+    return (
+      <Btn
+        sub={side === "early" ? "早" : "遅"}
+        label={state[gc] ? accelLabel(state, gc) : "動く"}
+        onClass={onGreen}
+        active={state.accel === key}
+        onClick={() => setAccel(key)}
+      />
+    );
   };
 
-  const visibleRows = ROWS.filter((row) => state.showCharge || !row.id.startsWith("charge-"));
-
-  // 行の有効な選択結果（ミラー連動考慮）
-  const activeResultOf = (row: Row): Option | null => {
-    const activeKey = state.selections[row.id] ?? null;
-    let opts = row.options;
-    if (row.mirrorOf) {
-      const srcKey = state.selections[row.mirrorOf] ?? null;
-      const srcKind = srcKey ? elementKind(srcKey) : null;
-      if (!srcKind) return null;
-      const wantKind = srcKind === "fire" ? "tsunami" : "fire";
-      opts = row.options.filter((o) => elementKind(o.key) === wantKind);
-    }
-    return opts.find((o) => o.key === activeKey) ?? null;
+  const sankaiBtn = (side: Side) => {
+    const tone = state.gc1 ? raisuiTone(state, "gc1") : "blue";
+    return (
+      <Btn
+        sub={side === "early" ? "早" : "遅"}
+        label={state.gc1 ? raisuiLabel(state, "gc1") : "雷水"}
+        onClass={tone === "red" ? onRed : onBlue}
+        active={state.sankai === side}
+        onClick={() => setSankai(side)}
+      />
+    );
   };
+
+  const hontoUso = (key: "gc1" | "gc2" | "fire" | "tsunami") => (
+    <div className="grid grid-cols-2 gap-2">
+      <Btn
+        label="ホント"
+        onClass={onBlue}
+        active={state[key] === "honto"}
+        onClick={() => setChoice(key, "honto")}
+      />
+      <Btn
+        label="ウソ"
+        onClass={onRed}
+        active={state[key] === "uso"}
+        onClick={() => setChoice(key, "uso")}
+      />
+    </div>
+  );
+
+  const Section = ({ name, children }: { name: string; children: React.ReactNode }) => (
+    <div className="flex items-stretch gap-2">
+      <div className="flex w-10 shrink-0 items-center justify-center text-lg font-bold text-[#ffcc00]">
+        {name}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-2">{children}</div>
+    </div>
+  );
 
   return (
     <div className="flex w-full flex-col gap-3 p-1">
-      {/* 接続インジケータ：上端の極細バー（色だけで状態を示す） */}
       <div
         title={connected ? "同期中" : "未接続"}
         className={`h-[3px] w-full rounded-full ${connected ? "bg-[#3fbf6f]" : "bg-[#555]"}`}
       />
 
-      {visibleRows.map((row) => {
-        const activeKey = state.selections[row.id] ?? null;
-        // ミラー連動で表示する選択肢を絞る
-        let opts = row.options;
-        let mirrorWaiting = false;
-        if (row.mirrorOf) {
-          const srcKey = state.selections[row.mirrorOf] ?? null;
-          const srcKind = srcKey ? elementKind(srcKey) : null;
-          if (srcKind) {
-            const want = srcKind === "fire" ? "tsunami" : "fire";
-            opts = row.options.filter((o) => elementKind(o.key) === want);
-          } else {
-            mirrorWaiting = true;
-          }
-        }
-        const activeOption = activeResultOf(row);
-        const isGc = row.id === "gc1" || row.id === "gc2";
+      <Section name="GC1">{hontoUso("gc1")}</Section>
+      <Section name="加速">
+        <div className="grid grid-cols-2 gap-2">
+          {accelBtn("gc1", "early")}
+          {accelBtn("gc1", "late")}
+        </div>
+      </Section>
+      <Section name="雷水">
+        <div className="grid grid-cols-2 gap-2">
+          {sankaiBtn("early")}
+          {sankaiBtn("late")}
+        </div>
+      </Section>
 
-        return (
-          <div key={row.id} className="flex items-stretch gap-2">
-            {/* 行ラベル（最小幅・縦中央） */}
-            <div className="flex w-10 shrink-0 items-center justify-center text-lg font-bold text-[#ffcc00]">
-              {row.name}
-            </div>
+      <Section name="GC2">{hontoUso("gc2")}</Section>
+      <Section name="加速">
+        <div className="grid grid-cols-2 gap-2">
+          {accelBtn("gc2", "early")}
+          {accelBtn("gc2", "late")}
+        </div>
+      </Section>
 
-            <div className="flex min-w-0 flex-1 flex-col gap-2">
-              {/* 選択ボタン */}
-              {mirrorWaiting ? (
-                <div className="flex min-h-[80px] items-center justify-center text-center text-base text-[#777]">
-                  ↑前の行を選択
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  {opts.map((opt) => {
-                    const isActive = activeKey === opt.key;
-                    return (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        className={`min-h-[80px] cursor-pointer rounded-lg border-2 text-2xl font-bold ${
-                          isActive ? toneClass[opt.tone] : "border-[#444] bg-[#222] text-[#ccc]"
-                        }`}
-                        onClick={() => setSelect(row.id, opt.key)}
-                      >
-                        {opt.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* GC行：早・遅 の雷水ボタン（選択後のみ。個人ギミック=加速は一旦なし） */}
-              {isGc && activeOption && (
-                <div className="grid grid-cols-2 gap-2">
-                  {ACCEL_COLS.map(({ col, label }) => {
-                    const cell = activeOption.results[col as keyof typeof activeOption.results];
-                    // stack: [加速(i=0), 雷水(i=1)] のうち雷水(i=1)だけ使う
-                    const s = cell?.stack?.[1];
-                    if (!s) return <div key={col} />;
-                    const id = `${row.id}:${col}:1`;
-                    const lit = state.marks[id];
-                    const dimmed = state.dimmedMarks[id] && !lit;
-                    return (
-                      <button
-                        key={col}
-                        type="button"
-                        className={`flex min-h-[72px] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-lg border-2 font-bold ${
-                          dimmed
-                            ? "border-[#555] bg-[rgba(255,255,255,0.03)] text-[#777] opacity-60"
-                            : lit
-                              ? toneClass[s.tone]
-                              : `bg-transparent ${outlineTone[s.tone]}`
-                        }`}
-                        onClick={() => toggleMark(id)}
-                      >
-                        <span className="text-xs opacity-80">{label}</span>
-                        <span className="text-xl">{s.action}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
+      <Section name="🔥">{hontoUso("fire")}</Section>
+      <Section name="🌊">{hontoUso("tsunami")}</Section>
     </div>
   );
 }

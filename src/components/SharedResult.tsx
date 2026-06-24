@@ -77,10 +77,10 @@ export default function SharedResult({ code }: { code: string }) {
           {connected ? "🟢" : "⚪"} 共有 {code}
         </span>
       </div>
-      <SummaryView state={state} variant="full" />
+      <SummaryView state={state} />
 
       {/* Document PiP の小窓へ最終結果を描画（state と自動同期） */}
-      {pipContainer && createPortal(<SummaryView state={state} variant="pip" />, pipContainer)}
+      {pipContainer && createPortal(<SummaryView state={state} />, pipContainer)}
     </>
   );
 }
