@@ -299,7 +299,7 @@ export default function Board({
   );
 
   const RowLabel = ({ children }: { children: React.ReactNode }) => (
-    <span className="flex items-center justify-center text-center text-[14px] font-extrabold leading-[1.1] text-[#c96442]">
+    <span className="flex items-center justify-center text-center text-[11px] font-extrabold leading-[1.1] text-[#c96442]">
       {children}
     </span>
   );
