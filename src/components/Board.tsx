@@ -192,7 +192,7 @@ export default function Board({
     // 小窓は rem 基準の文字が小さく潰れるので、root font-size を高さ基準で拡大。
     const applyPipFont = () => {
       const h = pip.innerHeight || (withMemo ? 360 : 150);
-      pip.document.documentElement.style.fontSize = `${Math.max(16, Math.round(h * 0.11))}px`;
+      pip.document.documentElement.style.fontSize = `${Math.max(13, Math.round(h * 0.06))}px`;
     };
     applyPipFont();
     pip.addEventListener("resize", applyPipFont);
