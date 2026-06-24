@@ -170,7 +170,9 @@ export default function Board({
       return;
     }
     if (dpip.window) dpip.window.close();
-    const pip = await dpip.requestWindow({ width: 480, height: withMemo ? 360 : 150 });
+    // できるだけ正方形に。記憶ありは縦に項目が増えるぶん少し高め。
+    const side = withMemo ? 380 : 320;
+    const pip = await dpip.requestWindow({ width: side, height: side });
     // 親のスタイルを小窓へコピー
     for (const sheet of Array.from(document.styleSheets)) {
       try {
@@ -191,7 +193,7 @@ export default function Board({
     }
     // 小窓は rem 基準の文字が小さく潰れるので、root font-size を高さ基準で拡大。
     const applyPipFont = () => {
-      const h = pip.innerHeight || (withMemo ? 360 : 150);
+      const h = pip.innerHeight || side;
       pip.document.documentElement.style.fontSize = `${Math.max(13, Math.round(h * 0.06))}px`;
     };
     applyPipFont();
