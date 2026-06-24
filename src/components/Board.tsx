@@ -299,14 +299,14 @@ export default function Board({
   );
 
   const RowLabel = ({ children }: { children: React.ReactNode }) => (
-    <span className="flex items-center justify-center text-center text-[11px] font-extrabold leading-[1.1] text-[#c96442]">
+    <span className="flex items-center justify-center whitespace-nowrap text-center text-[10px] font-extrabold leading-[1.05] text-[#c96442]">
       {children}
     </span>
   );
 
   // 記憶（4行×6列）。盤面・PiP で共通利用。
   const memoGrid = (
-    <div className="grid min-h-0 flex-1 grid-cols-[2.4em_1fr_1fr_2.4em_1fr_1fr] grid-rows-4 gap-1.5">
+    <div className="grid min-h-0 flex-1 grid-cols-[1.6em_1fr_1fr_1.6em_1fr_1fr] grid-rows-4 gap-1.5">
       <RowLabel>GC1</RowLabel>
       {hontoUso("gc1")}
       <RowLabel>GC2</RowLabel>
