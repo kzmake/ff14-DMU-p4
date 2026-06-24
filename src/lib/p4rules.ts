@@ -34,7 +34,7 @@ export type ResultColumn = { key: string; placeholder: string; cells: ResultCell
 // --- GC の雷/水・動く動かない（ホント=雷/動く=青、ウソ=水/動かない=赤） ---
 export const raisuiTone = (s: BoardState, gc: GcKey): Tone => (s[gc] === "uso" ? "red" : "blue");
 export const raisuiLabel = (s: BoardState, gc: GcKey): string =>
-  s[gc] === "uso" ? "水さんかい" : "雷さんかい";
+  s[gc] === "uso" ? "水散会" : "雷散会";
 export const accelLabel = (s: BoardState, gc: GcKey): string =>
   s[gc] === "uso" ? "動かない" : "動く";
 
