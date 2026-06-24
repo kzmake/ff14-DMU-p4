@@ -50,22 +50,22 @@ const CASES: { name: string; input: Partial<BoardState>; expect: string[] }[] = 
   {
     name: "fire=honto",
     input: { fire: "honto" },
-    expect: ["-", "-", "🔥離れる(blue)", "-", "-"],
+    expect: ["-", "-", "離れる(blue)", "-", "-"],
   },
   {
     name: "fire=uso",
     input: { fire: "uso" },
-    expect: ["-", "-", "🔥そのまま(outline-red)", "-", "-"],
+    expect: ["-", "-", "そのまま(outline-red)", "-", "-"],
   },
   {
     name: "tsunami=honto",
     input: { tsunami: "honto" },
-    expect: ["-", "-", "-", "-", "🌊そのまま(outline-blue)"],
+    expect: ["-", "-", "-", "-", "そのまま(outline-blue)"],
   },
   {
     name: "tsunami=uso",
     input: { tsunami: "uso" },
-    expect: ["-", "-", "-", "-", "🌊離れる(red)"],
+    expect: ["-", "-", "-", "-", "離れる(red)"],
   },
 ];
 

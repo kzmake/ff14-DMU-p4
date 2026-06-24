@@ -78,9 +78,9 @@ export function resultColumns(s: BoardState): ResultColumn[] {
       placeholder: "🔥\nほのお",
       cells:
         s.fire === "honto"
-          ? [{ text: "🔥離れる", tone: "blue" }]
+          ? [{ text: "離れる", tone: "blue" }]
           : s.fire === "uso"
-            ? [{ text: "🔥そのまま", tone: "outline-red" }] // 何もしない＝枠線
+            ? [{ text: "そのまま", tone: "outline-red" }] // 何もしない＝枠線
             : [],
     }, // ③
     { key: "late", placeholder: "遅\n雷水・加速", cells: sideCells(s, "late") }, // ④
@@ -89,9 +89,9 @@ export function resultColumns(s: BoardState): ResultColumn[] {
       placeholder: "🌊\nつなみ",
       cells:
         s.tsunami === "honto"
-          ? [{ text: "🌊そのまま", tone: "outline-blue" }] // 何もしない＝枠線
+          ? [{ text: "そのまま", tone: "outline-blue" }] // 何もしない＝枠線
           : s.tsunami === "uso"
-            ? [{ text: "🌊離れる", tone: "red" }]
+            ? [{ text: "離れる", tone: "red" }]
             : [],
     }, // ⑤
   ];
