@@ -127,8 +127,9 @@ export default function Board({
     current: number | null,
     setH: (h: number) => void,
     reversed = false,
+    defaultFrac = 0.4,
   ) => {
-    const startH = current ?? win.innerHeight * 0.4;
+    const startH = current ?? win.innerHeight * defaultFrac;
     const dir = reversed ? -1 : 1;
     const move = (clientY: number) => {
       setH(Math.max(60, Math.min(win.innerHeight - 120, startH + dir * (clientY - downY))));
@@ -147,8 +148,9 @@ export default function Board({
     win.addEventListener("touchend", up);
   };
 
-  // 本体の仕切り（結果は常に上）
-  const onDividerDown = (downY: number) => startResize(downY, window, resultH, setResultH);
+  // 本体の仕切り（結果は常に上）。既定の結果高さ 28dvh に合わせる。
+  const onDividerDown = (downY: number) =>
+    startResize(downY, window, resultH, setResultH, false, 0.28);
   // PiP の仕切り（PiP のウィンドウ基準。反転中は結果が下なので方向を反転）
   const onPipDividerDown = (downY: number) => {
     const win = pipContainer?.ownerDocument.defaultView;
@@ -394,7 +396,7 @@ export default function Board({
       {/* 結果（上） */}
       <div
         className="flex shrink-0 flex-col rounded-lg border-2 border-[#c96442] bg-[rgba(201,100,66,0.06)] p-1.5"
-        style={{ height: resultH != null ? `${resultH}px` : "40dvh" }}
+        style={{ height: resultH != null ? `${resultH}px` : "28dvh" }}
       >
         <SummaryView state={state} />
       </div>
