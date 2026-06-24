@@ -47,18 +47,21 @@ function ResultColumn({
   cells: ResultCell[];
   square?: boolean;
 }) {
-  const cellSq = square ? "aspect-square flex-none" : "";
+  // square: 列の外枠を正方形にし、中のセルは均等に分け合う
+  //（1セル=全体、2セル=半分ずつ）。柔軟にフィットさせる。
   return (
-    <div className="flex min-w-0 flex-col gap-1 rounded-md border border-[#3a3834] bg-[rgba(255,255,255,0.03)] p-1">
+    <div
+      className={`flex min-w-0 flex-col gap-1 rounded-md border border-[#3a3834] bg-[rgba(255,255,255,0.03)] p-1 ${
+        square ? "aspect-square" : ""
+      }`}
+    >
       {cells.length === 0 ? (
-        <div
-          className={`flex min-h-0 flex-1 items-center justify-center whitespace-pre-line rounded-md border-2 border-dashed border-[#34322e] text-center text-[0.7rem] font-semibold leading-[1.2] text-[#54524c] ${cellSq}`}
-        >
+        <div className="flex min-h-0 flex-1 items-center justify-center whitespace-pre-line rounded-md border-2 border-dashed border-[#34322e] text-center text-[0.7rem] font-semibold leading-[1.2] text-[#54524c]">
           {placeholder}
         </div>
       ) : (
         cells.map((c) => (
-          <div key={`${c.text}:${c.tone}`} className={`${cellBase} ${cellSq} ${toneClass[c.tone]}`}>
+          <div key={`${c.text}:${c.tone}`} className={`${cellBase} ${toneClass[c.tone]}`}>
             {c.text}
           </div>
         ))
