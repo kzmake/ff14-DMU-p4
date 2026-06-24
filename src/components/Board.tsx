@@ -35,7 +35,7 @@ const onGreenOutline = "bg-transparent text-[#7f9f76] border-[#7f9f76]";
 const offBtn = "bg-[#30302e] text-[#c2bfb4] border-[#46443f]";
 
 const cellBase =
-  "flex flex-1 min-h-0 items-center justify-center rounded-md border-2 text-center font-bold leading-[1.15] px-0.5 py-0 whitespace-pre-line break-all";
+  "flex flex-1 min-h-0 items-center justify-center rounded-md border-2 text-center font-bold leading-[1.2] p-1 whitespace-pre-line";
 
 // 結果1列ぶん（空ならプレースホルダーをうっすら）。square=true でセルを正方形に。
 function ResultColumn({
@@ -63,8 +63,10 @@ function ResultColumn({
         cells.map((c) => (
           <div
             key={`${c.text}:${c.tone}`}
-            // 2セルになる列は高さが半分なので文字を小さく（半分の高さにフィット）
-            className={`${cellBase} ${cells.length >= 2 ? "text-[0.62rem]" : "text-[0.8rem]"} ${toneClass[c.tone]}`}
+            // PiP(正方形)では2セル列はセル高さが半分なので文字を小さく。本体は従来サイズ。
+            className={`${cellBase} ${
+              square && cells.length >= 2 ? "text-[0.62rem]" : "text-[0.8rem]"
+            } ${toneClass[c.tone]}`}
           >
             {c.text}
           </div>
@@ -142,6 +144,28 @@ export default function Board({
   onChange: (next: BoardState) => void;
   shareInfo?: { code: string; connected: boolean };
 }) {
+  // 本体の結果エリア高さ（px）。null は既定 28dvh。仕切りドラッグで変える。
+  const [resultH, setResultH] = useState<number | null>(null);
+  const onDividerDown = (downY: number) => {
+    const win = window;
+    const startH = resultH ?? win.innerHeight * 0.28;
+    const move = (clientY: number) => {
+      setResultH(Math.max(60, Math.min(win.innerHeight - 120, startH + (clientY - downY))));
+    };
+    const mm = (e: MouseEvent) => move(e.clientY);
+    const tm = (e: TouchEvent) => move(e.touches[0].clientY);
+    const up = () => {
+      win.removeEventListener("mousemove", mm);
+      win.removeEventListener("mouseup", up);
+      win.removeEventListener("touchmove", tm);
+      win.removeEventListener("touchend", up);
+    };
+    win.addEventListener("mousemove", mm);
+    win.addEventListener("mouseup", up);
+    win.addEventListener("touchmove", tm, { passive: true });
+    win.addEventListener("touchend", up);
+  };
+
   // オーバーレイ(PiP)。記憶も含めるか・上下反転するかをトグルできる。
   const [pipContainer, setPipContainer] = useState<HTMLElement | null>(null);
   const [pipMemo, setPipMemo] = useState(true); // 既定: 記憶も表示
@@ -405,13 +429,29 @@ export default function Board({
         </button>
       </div>
 
-      {/* 結果（上）：正方形セルでウィンドウ幅にフィット */}
-      <div className="flex shrink-0 flex-col rounded-lg border-2 border-[#c96442] bg-[rgba(201,100,66,0.06)] p-1.5">
-        <SummaryView state={state} square />
+      {/* 結果（上） */}
+      <div
+        className="flex shrink-0 flex-col rounded-lg border-2 border-[#c96442] bg-[rgba(201,100,66,0.06)] p-1.5"
+        style={{ height: resultH != null ? `${resultH}px` : "28dvh" }}
+      >
+        <SummaryView state={state} />
       </div>
 
-      {/* 記憶（下）：4行×6列。正方形ボタンでフィット */}
-      <div className="shrink-0">{memoGrid(true)}</div>
+      {/* 結果と記憶の間：ドラッグで上下サイズ変更 */}
+      <div
+        className="flex shrink-0 cursor-row-resize items-center justify-center py-[2px]"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          onDividerDown(e.clientY);
+        }}
+        onTouchStart={(e) => onDividerDown(e.touches[0].clientY)}
+        title="ドラッグで結果と記憶の高さを調整"
+      >
+        <span className="h-[4px] w-12 rounded-full bg-[#54524c] hover:bg-[#c96442]" />
+      </div>
+
+      {/* 記憶（下）：4行×6列（本体は従来レイアウト） */}
+      {memoGrid()}
 
       {/* PiP 小窓：結果（＋記憶も表示ON時は記憶）を描画。state と自動同期・操作可 */}
       {pipContainer &&
