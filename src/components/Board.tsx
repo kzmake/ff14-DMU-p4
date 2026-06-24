@@ -138,42 +138,6 @@ export default function Board({
   onChange: (next: BoardState) => void;
   shareInfo?: { code: string; connected: boolean };
 }) {
-  // 結果エリアの高さ（px）。null は既定（本体のみリサイズ可）。
-  const [resultH, setResultH] = useState<number | null>(null);
-
-  // 仕切りドラッグの共通実装。win=対象ウィンドウ、setH=高さ更新先。
-  // reversed=true（記憶が上・結果が下）のときはドラッグ方向を反転する。
-  const startResize = (
-    downY: number,
-    win: Window,
-    current: number | null,
-    setH: (h: number) => void,
-    reversed = false,
-    defaultFrac = 0.4,
-  ) => {
-    const startH = current ?? win.innerHeight * defaultFrac;
-    const dir = reversed ? -1 : 1;
-    const move = (clientY: number) => {
-      setH(Math.max(60, Math.min(win.innerHeight - 120, startH + dir * (clientY - downY))));
-    };
-    const mm = (e: MouseEvent) => move(e.clientY);
-    const tm = (e: TouchEvent) => move(e.touches[0].clientY);
-    const up = () => {
-      win.removeEventListener("mousemove", mm);
-      win.removeEventListener("mouseup", up);
-      win.removeEventListener("touchmove", tm);
-      win.removeEventListener("touchend", up);
-    };
-    win.addEventListener("mousemove", mm);
-    win.addEventListener("mouseup", up);
-    win.addEventListener("touchmove", tm, { passive: true });
-    win.addEventListener("touchend", up);
-  };
-
-  // 本体の仕切り（結果は常に上）。既定の結果高さ 28dvh に合わせる。
-  const onDividerDown = (downY: number) =>
-    startResize(downY, window, resultH, setResultH, false, 0.28);
-
   // オーバーレイ(PiP)。記憶も含めるか・上下反転するかをトグルできる。
   const [pipContainer, setPipContainer] = useState<HTMLElement | null>(null);
   const [pipMemo, setPipMemo] = useState(true); // 既定: 記憶も表示
@@ -437,29 +401,13 @@ export default function Board({
         </button>
       </div>
 
-      {/* 結果（上） */}
-      <div
-        className="flex shrink-0 flex-col rounded-lg border-2 border-[#c96442] bg-[rgba(201,100,66,0.06)] p-1.5"
-        style={{ height: resultH != null ? `${resultH}px` : "28dvh" }}
-      >
-        <SummaryView state={state} />
+      {/* 結果（上）：正方形セルでウィンドウ幅にフィット */}
+      <div className="flex shrink-0 flex-col rounded-lg border-2 border-[#c96442] bg-[rgba(201,100,66,0.06)] p-1.5">
+        <SummaryView state={state} square />
       </div>
 
-      {/* 結果と記憶の間：ドラッグで上下サイズ変更 */}
-      <div
-        className="flex shrink-0 cursor-row-resize items-center justify-center py-[2px]"
-        onMouseDown={(e) => {
-          e.preventDefault();
-          onDividerDown(e.clientY);
-        }}
-        onTouchStart={(e) => onDividerDown(e.touches[0].clientY)}
-        title="ドラッグで結果と記憶の高さを調整"
-      >
-        <span className="h-[4px] w-12 rounded-full bg-[#54524c] hover:bg-[#c96442]" />
-      </div>
-
-      {/* 記憶（下）：4行×6列。本体は常に表示（PiPに出していても残す） */}
-      {memoGrid()}
+      {/* 記憶（下）：4行×6列。正方形ボタンでフィット */}
+      <div className="shrink-0">{memoGrid(true)}</div>
 
       {/* PiP 小窓：結果（＋記憶も表示ON時は記憶）を描画。state と自動同期・操作可 */}
       {pipContainer &&
