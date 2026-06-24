@@ -35,7 +35,7 @@ const onGreenOutline = "bg-transparent text-[#7f9f76] border-[#7f9f76]";
 const offBtn = "bg-[#30302e] text-[#c2bfb4] border-[#46443f]";
 
 const cellBase =
-  "flex flex-1 min-h-0 items-center justify-center rounded-md border-2 text-center text-[0.8rem] font-bold leading-[1.2] p-1 whitespace-pre-line";
+  "flex flex-1 min-h-0 items-center justify-center rounded-md border-2 text-center font-bold leading-[1.15] px-0.5 py-0 whitespace-pre-line break-all";
 
 // 結果1列ぶん（空ならプレースホルダーをうっすら）。square=true でセルを正方形に。
 function ResultColumn({
@@ -61,7 +61,11 @@ function ResultColumn({
         </div>
       ) : (
         cells.map((c) => (
-          <div key={`${c.text}:${c.tone}`} className={`${cellBase} ${toneClass[c.tone]}`}>
+          <div
+            key={`${c.text}:${c.tone}`}
+            // 2セルになる列は高さが半分なので文字を小さく（半分の高さにフィット）
+            className={`${cellBase} ${cells.length >= 2 ? "text-[0.62rem]" : "text-[0.8rem]"} ${toneClass[c.tone]}`}
+          >
             {c.text}
           </div>
         ))
