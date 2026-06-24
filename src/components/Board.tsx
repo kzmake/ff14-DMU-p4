@@ -451,7 +451,7 @@ export default function Board({
             <div className="flex shrink-0 flex-col rounded-lg border-2 border-[#c96442] bg-[rgba(201,100,66,0.06)] p-1.5">
               <SummaryView state={state} square />
             </div>
-            {pipMemo && <div className="shrink-0">{memoGrid(true)}</div>}
+            {pipMemo && <div className="flex min-h-0 flex-1 flex-col">{memoGrid(true)}</div>}
           </>,
           pipContainer,
         )}
