@@ -120,15 +120,18 @@ export default function Board({
   const [pipResultH, setPipResultH] = useState<number | null>(null); // PiP
 
   // 仕切りドラッグの共通実装。win=対象ウィンドウ、setH=高さ更新先。
+  // reversed=true（記憶が上・結果が下）のときはドラッグ方向を反転する。
   const startResize = (
     downY: number,
     win: Window,
     current: number | null,
     setH: (h: number) => void,
+    reversed = false,
   ) => {
     const startH = current ?? win.innerHeight * 0.4;
+    const dir = reversed ? -1 : 1;
     const move = (clientY: number) => {
-      setH(Math.max(60, Math.min(win.innerHeight - 120, startH + (clientY - downY))));
+      setH(Math.max(60, Math.min(win.innerHeight - 120, startH + dir * (clientY - downY))));
     };
     const mm = (e: MouseEvent) => move(e.clientY);
     const tm = (e: TouchEvent) => move(e.touches[0].clientY);
@@ -144,12 +147,12 @@ export default function Board({
     win.addEventListener("touchend", up);
   };
 
-  // 本体の仕切り
+  // 本体の仕切り（結果は常に上）
   const onDividerDown = (downY: number) => startResize(downY, window, resultH, setResultH);
-  // PiP の仕切り（PiP のウィンドウ基準）
+  // PiP の仕切り（PiP のウィンドウ基準。反転中は結果が下なので方向を反転）
   const onPipDividerDown = (downY: number) => {
     const win = pipContainer?.ownerDocument.defaultView;
-    if (win) startResize(downY, win, pipResultH, setPipResultH);
+    if (win) startResize(downY, win, pipResultH, setPipResultH, pipFlip);
   };
 
   // オーバーレイ(PiP)。記憶も含めるか・上下反転するかをトグルできる。
