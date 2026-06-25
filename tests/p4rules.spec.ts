@@ -8,64 +8,64 @@ function fmt(cells: { text: string; tone: string }[]): string {
   return cells.map((c) => `${c.text}(${c.tone})`).join(" / ");
 }
 
-// state を5列の文字列配列へ（左から ①〜⑤）。
+// state を6列の文字列配列へ（左から ①〜⑥）。
 function cols(partial: Partial<BoardState>): string[] {
   const state: BoardState = { ...INITIAL_BOARD_STATE, ...partial };
   return resultColumns(state).map((c) => fmt(c.cells));
 }
 
-// spec.md「検証ケース」表（① early ② look ③ fire ④ late ⑤ tsunami）
+// spec.md「検証ケース」表（① early ② look ③ fire ④ late ⑤ lookLate ⑥ tsunami）
 const CASES: { name: string; input: Partial<BoardState>; expect: string[] }[] = [
-  { name: "全部未選択", input: {}, expect: ["-", "-", "-", "-", "-"] },
+  { name: "全部未選択", input: {}, expect: ["-", "-", "-", "-", "-", "-"] },
   {
     name: "gc1=honto, sankai=early",
     input: { gc1: "honto", sankai: "early" },
-    expect: ["雷散会(blue)", "みない(blue)", "-", "-", "-"],
+    expect: ["雷散会(blue)", "みない(blue)", "-", "-", "-", "-"],
   },
   {
     name: "gc1=uso, sankai=early",
     input: { gc1: "uso", sankai: "early" },
-    expect: ["水散会(red)", "みる(outline-red)", "-", "-", "-"],
+    expect: ["水散会(red)", "みる(outline-red)", "-", "-", "-", "-"],
   },
   {
     name: "gc1=honto, gc2=uso, sankai=early",
     input: { gc1: "honto", gc2: "uso", sankai: "early" },
-    expect: ["雷散会(blue)", "みない(blue)", "-", "水散会(red)", "-"],
+    expect: ["雷散会(blue)", "みない(blue)", "-", "水散会(red)", "みる(outline-red)", "-"],
   },
   {
     name: "gc1=honto, gc2=uso, sankai=late",
     input: { gc1: "honto", gc2: "uso", sankai: "late" },
-    expect: ["水散会(red)", "みない(blue)", "-", "雷散会(blue)", "-"],
+    expect: ["水散会(red)", "みない(blue)", "-", "雷散会(blue)", "みる(outline-red)", "-"],
   },
   {
     name: "gc1=honto, sankai=early, accel=gc1:early",
     input: { gc1: "honto", sankai: "early", accel: "gc1:early" },
-    expect: ["雷散会(blue) / 動く(outline-green)", "みない(blue)", "-", "-", "-"],
+    expect: ["雷散会(blue) / 止まる(outline-green)", "みない(blue)", "-", "-", "-", "-"],
   },
   {
     name: "gc1=uso, sankai=early, accel=gc1:late",
     input: { gc1: "uso", sankai: "early", accel: "gc1:late" },
-    expect: ["水散会(red)", "みる(outline-red)", "-", "止まる(outline-green)", "-"],
+    expect: ["水散会(red)", "みる(outline-red)", "-", "動く(outline-green)", "-", "-"],
   },
   {
     name: "fire=honto",
     input: { fire: "honto" },
-    expect: ["-", "-", "離れる(blue)", "-", "-"],
+    expect: ["-", "-", "離れる(blue)", "-", "-", "-"],
   },
   {
     name: "fire=uso",
     input: { fire: "uso" },
-    expect: ["-", "-", "そのまま(outline-red)", "-", "-"],
+    expect: ["-", "-", "そのまま(outline-red)", "-", "-", "-"],
   },
   {
     name: "tsunami=honto",
     input: { tsunami: "honto" },
-    expect: ["-", "-", "-", "-", "そのまま(outline-blue)"],
+    expect: ["-", "-", "-", "-", "-", "そのまま(outline-blue)"],
   },
   {
     name: "tsunami=uso",
     input: { tsunami: "uso" },
-    expect: ["-", "-", "-", "-", "離れる(red)"],
+    expect: ["-", "-", "-", "-", "-", "離れる(red)"],
   },
 ];
 

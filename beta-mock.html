@@ -61,7 +61,7 @@
   /* 結果は左から 1〜5 の横並び5列（spec.md の「結果」順）。高さいっぱいに広げる */
   .result-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 6px;
     flex: 1 1 0; min-height: 0;
   }
@@ -176,7 +176,9 @@
       <div class="result-col"><div class="result-cells" id="res-fire"></div></div>
       <!-- ④ 遅：雷水・加速度 -->
       <div class="result-col"><div class="result-cells" id="res-late"></div></div>
-      <!-- ⑤ つなみ -->
+      <!-- ⑤ 遅：視線 -->
+      <div class="result-col"><div class="result-cells" id="res-look-late"></div></div>
+      <!-- ⑥ つなみ -->
       <div class="result-col"><div class="result-cells" id="res-tsunami"></div></div>
     </div>
   </div>
@@ -197,11 +199,11 @@
 
       <!-- 2行目：加速（GC1 / GC2） -->
       <span class="row-label">加速</span>
-      <button class="opt" data-sel="accel" data-key="gc1:early"><b class="tag">早</b><span class="accel-sub">動く</span></button>
-      <button class="opt" data-sel="accel" data-key="gc1:late"><b class="tag">遅</b><span class="accel-sub">動く</span></button>
+      <button class="opt" data-sel="accel" data-key="gc1:early"><b class="tag">早</b><span class="accel-sub">止まる</span></button>
+      <button class="opt" data-sel="accel" data-key="gc1:late"><b class="tag">遅</b><span class="accel-sub">止まる</span></button>
       <span class="row-label">加速</span>
-      <button class="opt" data-sel="accel" data-key="gc2:early"><b class="tag">早</b><span class="accel-sub">動く</span></button>
-      <button class="opt" data-sel="accel" data-key="gc2:late"><b class="tag">遅</b><span class="accel-sub">動く</span></button>
+      <button class="opt" data-sel="accel" data-key="gc2:early"><b class="tag">早</b><span class="accel-sub">止まる</span></button>
+      <button class="opt" data-sel="accel" data-key="gc2:late"><b class="tag">遅</b><span class="accel-sub">止まる</span></button>
 
       <!-- 3行目：雷水（GC1=選択 / GC2=連動・押せない） -->
       <span class="row-label">雷水</span>
@@ -229,16 +231,16 @@
     fire: null,       // honto | uso
     tsunami: null,    // honto | uso
     sankai: null,     // early | late（必須1つ）
-    // 加速度（動く/動かない）は GC1/GC2 × 早/遅 の4ボタン中「合計1つだけ」点灯。
+    // 加速度（止まる/動く）は GC1/GC2 × 早/遅 の4ボタン中「合計1つだけ」点灯。
     // どのボタンか1つを文字列キーで保持： "gc1:early" など。null=未選択。
     accel: null,
   };
 
   // spec.md ロジック
-  // GC1/GC2 それぞれ honto=雷さんかい/動く（青）, uso=水さんかい/動かない（赤）
+  // GC1/GC2 それぞれ honto=雷さんかい/止まる（青）, uso=水さんかい/動く（赤）
   const raisuiTone  = (gc) => state[gc] === 'uso' ? 'red' : 'blue';
   const raisuiLabel = (gc) => state[gc] === 'uso' ? '水さんかい' : '雷さんかい';
-  const accelLabel  = (gc) => state[gc] === 'uso' ? '動かない' : '動く';
+  const accelLabel  = (gc) => state[gc] === 'uso' ? '動く' : '止まる';
 
   // ホント/ウソ系（gc1/gc2/fire/tsunami）と sankai は val 方式
   function bindSimple(sel, key) {
@@ -287,7 +289,7 @@
       if (on) btn.classList.add('on-' + tone);
     });
 
-    // 加速ボタンのサブラベル（動く/動かない）を各GCに合わせて更新
+    // 加速ボタンのサブラベル（止まる/動く）を各GCに合わせて更新
     root.querySelectorAll('[data-sel="accel"]').forEach(btn => {
       const gc = btn.dataset.key.split(':')[0]; // gc1/gc2
       const sub = btn.querySelector('.accel-sub');
@@ -333,7 +335,7 @@
     return side === 'early' ? 'gc2' : 'gc1'; // sankai==='late'
   }
 
-  // 早側/遅側セル（雷水[上]＋動く/動かない[下]）
+  // 早側/遅側セル（雷水[上]＋止まる/動く[下]）
   function sideCells(side) {
     const cells = [];
     const gc = sankaiGcFor(side); // この side に来る雷水のGC
@@ -345,7 +347,7 @@
     return cells;
   }
 
-  // 状態 → 結果表（5列ぶんのセル配列を持つ1つのデータ）を組み立てる。
+  // 状態 → 結果表（6列ぶんのセル配列を持つ1つのデータ）を組み立てる。
   // 描画はこの table を読むだけ。ここが唯一の「結果の真実」。
   function computeResultTable() {
     return [
@@ -358,7 +360,11 @@
       { id: 'res-fire',    placeholder: '🔥\nほのお', cells: state.fire === 'honto' ? [{ text: '🔥離れる', tone: 'blue' }]   // ③ ほのお
           : state.fire === 'uso' ? [{ text: '🔥そのまま', tone: 'outline-red' }] : [] },
       { id: 'res-late',    placeholder: '遅\n雷水・加速', cells: sideCells('late') },       // ④ 遅：雷水・加速
-      { id: 'res-tsunami', placeholder: '🌊\nつなみ', cells: state.tsunami === 'honto' ? [{ text: '🌊そのまま', tone: 'outline-blue' }] // ⑤ つなみ
+      { id: 'res-look-late', placeholder: '遅\n視線', cells: !state.gc2 ? []                // ⑤ 遅：視線
+          : [ state.gc2 === 'honto'
+                ? { text: 'みない', tone: 'blue' }
+                : { text: 'みる',   tone: 'outline-red' } ] },
+      { id: 'res-tsunami', placeholder: '🌊\nつなみ', cells: state.tsunami === 'honto' ? [{ text: '🌊そのまま', tone: 'outline-blue' }] // ⑥ つなみ
           : state.tsunami === 'uso' ? [{ text: '🌊離れる', tone: 'red' }] : [] },
     ];
   }
