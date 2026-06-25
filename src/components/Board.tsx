@@ -76,11 +76,11 @@ function ResultColumn({
   );
 }
 
-// 結果5列（左から ①〜⑤）。盤面・PiP・結果ページで共通。square=true で各セル正方形。
+// 結果6列（左から ①〜⑥）。盤面・PiP・結果ページで共通。square=true で各セル正方形。
 export function SummaryView({ state, square }: { state: BoardState; square?: boolean }) {
   const cols = resultColumns(state);
   return (
-    <div className={`grid min-h-0 grid-cols-5 gap-[6px] ${square ? "items-start" : "flex-1"}`}>
+    <div className={`grid min-h-0 grid-cols-6 gap-[6px] ${square ? "items-start" : "flex-1"}`}>
       {cols.map((col) => (
         <ResultColumn
           key={col.key}
