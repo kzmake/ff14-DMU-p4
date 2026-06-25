@@ -31,12 +31,12 @@ export type Tone = "blue" | "red" | "green" | "outline-blue" | "outline-red" | "
 export type ResultCell = { text: string; tone: Tone };
 export type ResultColumn = { key: string; placeholder: string; cells: ResultCell[] };
 
-// --- GC の雷/水・動く動かない（ホント=雷/動く=青、ウソ=水/動かない=赤） ---
+// --- GC の雷/水・動く動かない（ホント=雷/止まる=青、ウソ=水/動く=赤） ---
 export const raisuiTone = (s: BoardState, gc: GcKey): Tone => (s[gc] === "uso" ? "red" : "blue");
 export const raisuiLabel = (s: BoardState, gc: GcKey): string =>
   s[gc] === "uso" ? "水散会" : "雷散会";
 export const accelLabel = (s: BoardState, gc: GcKey): string =>
-  s[gc] === "uso" ? "止まる" : "動く";
+  s[gc] === "uso" ? "動く" : "止まる";
 
 // 1-a: sankai='early' → 早=GC1・遅=GC2 ／ 'late' → 早=GC2・遅=GC1。
 // その side に来る雷水の GC を返す（未選択は null）。
@@ -85,6 +85,17 @@ export function resultColumns(s: BoardState): ResultColumn[] {
     }, // ③
     { key: "late", placeholder: "遅\n雷水・加速", cells: sideCells(s, "late") }, // ④
     {
+      key: "lookLate",
+      placeholder: "遅\n視線",
+      cells: !s.gc2
+        ? []
+        : [
+            s.gc2 === "honto"
+              ? { text: "みない", tone: "blue" }
+              : { text: "みる", tone: "outline-red" }, // 何もしない＝枠線
+          ],
+    }, // ⑤
+    {
       key: "tsunami",
       placeholder: "🌊\nつなみ",
       cells:
@@ -93,7 +104,7 @@ export function resultColumns(s: BoardState): ResultColumn[] {
           : s.tsunami === "uso"
             ? [{ text: "離れる", tone: "red" }]
             : [],
-    }, // ⑤
+    }, // ⑥
   ];
 }
 

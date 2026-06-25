@@ -249,7 +249,7 @@ export default function Board({
     return (
       <OptButton
         sub={side === "early" ? "早" : "遅"}
-        label={state[gc] ? accelLabel(state, gc) : "動く"}
+        label={state[gc] ? accelLabel(state, gc) : "止まる"}
         onClass={onGreenOutline}
         active={state.accel === key}
         onClick={() => setAccel(key)}
