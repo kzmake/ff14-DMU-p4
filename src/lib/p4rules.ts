@@ -61,7 +61,7 @@ function sideCells(s: BoardState, side: Side): ResultCell[] {
 // 状態 → 結果5列（左から ①〜⑤）。spec.md「結果」の唯一の実装。
 export function resultColumns(s: BoardState): ResultColumn[] {
   return [
-    { key: "early", placeholder: "早\n雷水・加速", cells: sideCells(s, "early") }, // ①
+    { key: "early", placeholder: "早\n雷水", cells: sideCells(s, "early") }, // ①
     {
       key: "look",
       placeholder: "早\n視線",
@@ -83,7 +83,7 @@ export function resultColumns(s: BoardState): ResultColumn[] {
             ? [{ text: "そのまま", tone: "outline-red" }] // 何もしない＝枠線
             : [],
     }, // ③
-    { key: "late", placeholder: "遅\n雷水・加速", cells: sideCells(s, "late") }, // ④
+    { key: "late", placeholder: "遅\n雷水", cells: sideCells(s, "late") }, // ④
     {
       key: "lookLate",
       placeholder: "遅\n視線",

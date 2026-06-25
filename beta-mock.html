@@ -352,14 +352,14 @@
   function computeResultTable() {
     return [
       // placeholder = 未選択時にうっすら出す案内
-      { id: 'res-early',   placeholder: '早\n雷水・加速', cells: sideCells('early') },     // ① 早：雷水・加速
+      { id: 'res-early',   placeholder: '早\n雷水', cells: sideCells('early') },     // ① 早：雷水・加速
       { id: 'res-look',    placeholder: '早\n視線', cells: !state.gc1 ? []                 // ② 早：視線
           : [ state.gc1 === 'honto'
                 ? { text: 'みない', tone: 'blue' }
                 : { text: 'みる',   tone: 'outline-red' } ] },
       { id: 'res-fire',    placeholder: '🔥\nほのお', cells: state.fire === 'honto' ? [{ text: '🔥離れる', tone: 'blue' }]   // ③ ほのお
           : state.fire === 'uso' ? [{ text: '🔥そのまま', tone: 'outline-red' }] : [] },
-      { id: 'res-late',    placeholder: '遅\n雷水・加速', cells: sideCells('late') },       // ④ 遅：雷水・加速
+      { id: 'res-late',    placeholder: '遅\n雷水', cells: sideCells('late') },       // ④ 遅：雷水・加速
       { id: 'res-look-late', placeholder: '遅\n視線', cells: !state.gc2 ? []                // ⑤ 遅：視線
           : [ state.gc2 === 'honto'
                 ? { text: 'みない', tone: 'blue' }
