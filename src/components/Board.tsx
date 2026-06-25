@@ -168,6 +168,31 @@ export default function Board({
   const [pipFlip, setPipFlip] = useState(true); // 既定: 上下反転（記憶が上・結果が下）
   const pipOpen = pipContainer !== null;
 
+  // PiP内の結果エリア高さ（px）。null は既定（中身なり）。仕切りドラッグで変える。
+  const [pipResultH, setPipResultH] = useState<number | null>(null);
+  const onPipDividerDown = (downY: number) => {
+    const win = pipContainer?.ownerDocument.defaultView;
+    if (!win) return;
+    const startH = pipResultH ?? win.innerHeight * 0.45;
+    // flip時は結果が下にあるので、ドラッグ方向と結果高さの増減を反転させる。
+    const dir = pipFlip ? -1 : 1;
+    const move = (clientY: number) => {
+      setPipResultH(Math.max(60, Math.min(win.innerHeight - 100, startH + dir * (clientY - downY))));
+    };
+    const mm = (e: MouseEvent) => move(e.clientY);
+    const tm = (e: TouchEvent) => move(e.touches[0].clientY);
+    const up = () => {
+      win.removeEventListener("mousemove", mm);
+      win.removeEventListener("mouseup", up);
+      win.removeEventListener("touchmove", tm);
+      win.removeEventListener("touchend", up);
+    };
+    win.addEventListener("mousemove", mm);
+    win.addEventListener("mouseup", up);
+    win.addEventListener("touchmove", tm, { passive: true });
+    win.addEventListener("touchend", up);
+  };
+
   const openPip = async (withMemo: boolean, flip: boolean) => {
     const dpip = window.documentPictureInPicture;
     if (!dpip) {
@@ -448,10 +473,29 @@ export default function Board({
       {pipContainer &&
         createPortal(
           <>
-            <div className="flex shrink-0 flex-col rounded-lg border-2 border-[#c96442] bg-[rgba(201,100,66,0.06)] p-1.5">
+            <div
+              className="flex shrink-0 flex-col overflow-hidden rounded-lg border-2 border-[#c96442] bg-[rgba(201,100,66,0.06)] p-1.5"
+              style={pipResultH != null ? { height: `${pipResultH}px` } : undefined}
+            >
               <SummaryView state={state} square />
             </div>
-            {pipMemo && <div className="flex min-h-0 flex-1 flex-col">{memoGrid(true)}</div>}
+            {pipMemo && (
+              <>
+                {/* 結果と記憶の間：ドラッグで上下サイズ変更 */}
+                <div
+                  className="flex shrink-0 cursor-row-resize items-center justify-center py-[2px]"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    onPipDividerDown(e.clientY);
+                  }}
+                  onTouchStart={(e) => onPipDividerDown(e.touches[0].clientY)}
+                  title="ドラッグで結果と記憶の高さを調整"
+                >
+                  <span className="h-[4px] w-12 rounded-full bg-[#54524c] hover:bg-[#c96442]" />
+                </div>
+                <div className="flex min-h-0 flex-1 flex-col">{memoGrid(true)}</div>
+              </>
+            )}
           </>,
           pipContainer,
         )}
